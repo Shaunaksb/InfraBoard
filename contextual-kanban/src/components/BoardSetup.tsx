@@ -128,13 +128,14 @@ const BoardSetup = ({ onCreateBoard }: BoardSetupProps) => {
                 Loading templates...
               </div>
             ) : templates.map((template) => (
-              <button
+              <Button
+                variant="outline"
                 key={template.id}
                 onClick={() => selectTemplate(template)}
-                className="group relative rounded-lg border border-border bg-card p-6 text-left transition-all duration-200 hover:border-primary/50 hover:shadow-card-hover"
+                className="group relative block h-auto w-full p-6 text-left whitespace-normal rounded-lg border border-border bg-card transition-all duration-200 hover:border-primary/50 hover:shadow-card-hover hover:bg-card"
               >
                 <span className="mb-3 block text-3xl">{template.icon || "📋"}</span>
-                <h3 className="text-lg font-semibold text-card-foreground">{template.name}</h3>
+                <h3 className="text-lg font-semibold text-card-foreground hover:text-card-foreground">{template.name}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">{template.description}</p>
                 {template.id !== "custom" && (
                   <div className="mt-3 flex flex-wrap gap-1.5">
@@ -145,7 +146,7 @@ const BoardSetup = ({ onCreateBoard }: BoardSetupProps) => {
                     ))}
                   </div>
                 )}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -159,12 +160,13 @@ const BoardSetup = ({ onCreateBoard }: BoardSetupProps) => {
         <SidebarTrigger />
       </div>
       <div className="w-full max-w-2xl animate-slide-up">
-        <button
+        <Button
+          variant="link"
           onClick={() => setStep("template")}
-          className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          className="mb-6 flex h-auto p-0 items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" /> Back to templates
-        </button>
+        </Button>
 
         <h2 className="text-2xl font-bold text-foreground">
           Configure your board
@@ -283,25 +285,36 @@ const BoardSetup = ({ onCreateBoard }: BoardSetupProps) => {
                 key={tag.id}
                 className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5"
               >
-                <select
+                <Select
                   value={tag.color}
-                  onChange={(e) => updateTag(i, { color: e.target.value })}
-                  className="h-4 w-4 cursor-pointer appearance-none rounded-full border-0 p-0"
-                  style={{ backgroundColor: `hsl(${tag.color})` }}
+                  onValueChange={(v) => updateTag(i, { color: v })}
                 >
-                  {TAG_COLORS.map((c) => (
-                    <option key={c.value} value={c.value}>{c.name}</option>
-                  ))}
-                </select>
+                  <SelectTrigger 
+                    className="h-5 w-5 cursor-pointer appearance-none rounded-full border-0 p-0 [&>svg]:hidden ring-0 focus:ring-0 shadow-none focus-visible:ring-0"
+                    style={{ backgroundColor: `hsl(${tag.color})` }}
+                  >
+                    <SelectValue asChild><div /></SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TAG_COLORS.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>
+                        <div className="flex items-center gap-2">
+                          <div className="h-3 w-3 rounded-full" style={{ backgroundColor: `hsl(${c.value})` }} />
+                          {c.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Input
                   value={tag.name}
                   onChange={(e) => updateTag(i, { name: e.target.value })}
                   placeholder="Tag name"
                   className="h-6 w-24 border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
                 />
-                <button onClick={() => removeTag(i)} className="text-muted-foreground hover:text-destructive">
+                <Button variant="ghost" size="icon" onClick={() => removeTag(i)} className="h-6 w-6 text-muted-foreground hover:bg-transparent hover:text-destructive">
                   <X className="h-3.5 w-3.5" />
-                </button>
+                </Button>
               </div>
             ))}
             {tags.length === 0 && (

@@ -5,6 +5,7 @@ import KanbanCardItem from "./KanbanCardItem";
 import CardDialog from "./CardDialog";
 import CardPreviewDialog from "./CardPreviewDialog";
 import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface KanbanColumnProps {
   column: KanbanColumnType;
@@ -56,7 +57,8 @@ const KanbanColumnComponent = ({ column, config, allCards, onAddCard, onEditCard
         )}
       </Droppable>
 
-      <button
+      <Button
+        variant="ghost"
         onClick={() => {
           setEditingCard(null);
           setDialogOpen(true);
@@ -64,7 +66,7 @@ const KanbanColumnComponent = ({ column, config, allCards, onAddCard, onEditCard
         className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
       >
         <Plus className="h-4 w-4" /> Add card
-      </button>
+      </Button>
 
       {/* Preview dialog */}
       {editingCard && (

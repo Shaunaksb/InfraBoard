@@ -187,21 +187,24 @@ const CardDialog = ({ open, onClose, onSave, onDelete, config, columnId, editCar
               <Label className="text-sm font-medium">Tags</Label>
               <div className="mt-2 flex flex-wrap gap-2">
                 {config.tags.map((tag) => (
-                  <button
+                  <Button
                     key={tag.id}
+                    variant="outline"
+                    size="sm"
                     onClick={() => toggleTag(tag.id)}
-                    className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${selectedTags.includes(tag.id)
+                    className={`h-auto rounded-full px-3 py-1 text-xs font-medium transition-all ${selectedTags.includes(tag.id)
                       ? "ring-2 ring-offset-1 ring-offset-card"
                       : "opacity-60 hover:opacity-100"
                       }`}
                     style={{
                       backgroundColor: `hsl(${tag.color} / 0.15)`,
                       color: `hsl(${tag.color})`,
+                      borderColor: `hsl(${tag.color} / 0.3)`,
                       ...(selectedTags.includes(tag.id) ? { ringColor: `hsl(${tag.color})` } : {}),
                     }}
                   >
                     {tag.name}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -224,9 +227,9 @@ const CardDialog = ({ open, onClose, onSave, onDelete, config, columnId, editCar
                     <p className="truncate text-foreground">{att.name}</p>
                     <p className="text-xs text-muted-foreground">{formatBytes(att.size)}</p>
                   </div>
-                  <button onClick={() => removeAttachment(att.id, true)} className="shrink-0 text-muted-foreground hover:text-destructive">
+                  <Button variant="ghost" size="icon" onClick={() => removeAttachment(att.id, true)} className="h-6 w-6 shrink-0 text-muted-foreground hover:bg-transparent hover:text-destructive">
                     <X className="h-4 w-4" />
-                  </button>
+                  </Button>
                 </div>
               ))}
               {pendingFiles.map((pf) => (
@@ -242,9 +245,9 @@ const CardDialog = ({ open, onClose, onSave, onDelete, config, columnId, editCar
                     <p className="truncate text-foreground">{pf.name} <span className="text-[10px] text-primary">(Pending)</span></p>
                     <p className="text-xs text-muted-foreground">{formatBytes(pf.size)}</p>
                   </div>
-                  <button onClick={() => removeAttachment(pf.id, false)} className="shrink-0 text-muted-foreground hover:text-destructive">
+                  <Button variant="ghost" size="icon" onClick={() => removeAttachment(pf.id, false)} className="h-6 w-6 shrink-0 text-muted-foreground hover:bg-transparent hover:text-destructive">
                     <X className="h-4 w-4" />
-                  </button>
+                  </Button>
                 </div>
               ))}
 
@@ -271,7 +274,7 @@ const CardDialog = ({ open, onClose, onSave, onDelete, config, columnId, editCar
               )}
 
               <div className="flex gap-2">
-                <input
+                <Input
                   ref={fileInputRef}
                   type="file"
                   multiple

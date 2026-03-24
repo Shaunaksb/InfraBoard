@@ -75,12 +75,14 @@ const BoardSidebar = ({ boards, activeBoardId, onSelectBoard, onNewBoard, onDele
                         <span className="flex-1 truncate">{board.config.name}</span>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <button
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               onClick={(e) => e.stopPropagation()}
-                              className="shrink-0 opacity-0 group-hover/item:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
+                              className="h-6 w-6 shrink-0 opacity-0 group-hover/item:opacity-100 text-muted-foreground hover:text-destructive hover:bg-transparent transition-opacity"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
-                            </button>
+                            </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent onClick={(e) => e.stopPropagation()}>
                             <AlertDialogHeader>
