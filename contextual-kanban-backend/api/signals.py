@@ -26,3 +26,24 @@ def seed_default_templates(sender, instance, created, **kwargs):
             config_fields=tpl_data.get("config_fields", []),
             owner=instance,
         )
+
+
+def sync_user_templates(user):
+    """
+    Synchronize a user's templates with the current DEFAULT_TEMPLATES.
+    Updates existing templates and creates missing ones.
+    """
+    for tpl_data in DEFAULT_TEMPLATES:
+        Template.objects.update_or_create(
+            owner=user,
+            name=tpl_data["name"],
+            tool_type=tpl_data.get("tool_type", ""),
+            defaults={
+                "description": tpl_data["description"],
+                "icon": tpl_data["icon"],
+                "columns": tpl_data["columns"],
+                "fields": tpl_data["fields"],
+                "tags": tpl_data["tags"],
+                "config_fields": tpl_data.get("config_fields", []),
+            }
+        )

@@ -13,27 +13,267 @@ env = Environment(
 )
 
 # ─────────────────────────────────────────────────────────────
+# BASE IMAGE REGISTRY
+# Each entry is keyed by the full Docker Hub tag.
+# To add a new base image: add one entry here — no other file needs to change.
+# ─────────────────────────────────────────────────────────────
+
+BASE_IMAGES = {
+    # ── Python ──────────────────────────────────────────────
+    'python:3.12': {
+        'label': 'Python 3.12',
+        'family': 'python',
+        'variant': 'full',
+        'package_manager': 'apt',
+        'install_cmd': 'apt-get update && apt-get install -y --no-install-recommends {packages} && rm -rf /var/lib/apt/lists/*',
+        'default_port': 8000,
+        'setup_cmds': [
+            'COPY requirements.txt .',
+            'RUN pip install --no-cache-dir -r requirements.txt',
+        ],
+        'default_cmd': '["python", "manage.py", "runserver", "0.0.0.0:8000"]',
+    },
+    'python:3.12-slim': {
+        'label': 'Python 3.12 Slim',
+        'family': 'python',
+        'variant': 'slim',
+        'package_manager': 'apt',
+        'install_cmd': 'apt-get update && apt-get install -y --no-install-recommends {packages} && rm -rf /var/lib/apt/lists/*',
+        'default_port': 8000,
+        'setup_cmds': [
+            'COPY requirements.txt .',
+            'RUN pip install --no-cache-dir -r requirements.txt',
+        ],
+        'default_cmd': '["python", "manage.py", "runserver", "0.0.0.0:8000"]',
+    },
+    'python:3.12-alpine': {
+        'label': 'Python 3.12 Alpine',
+        'family': 'python',
+        'variant': 'alpine',
+        'package_manager': 'apk',
+        'install_cmd': 'apk add --no-cache {packages}',
+        'default_port': 8000,
+        'setup_cmds': [
+            'COPY requirements.txt .',
+            'RUN pip install --no-cache-dir -r requirements.txt',
+        ],
+        'default_cmd': '["python", "manage.py", "runserver", "0.0.0.0:8000"]',
+    },
+    # ── Node ────────────────────────────────────────────────
+    'node:22': {
+        'label': 'Node.js 22',
+        'family': 'node',
+        'variant': 'full',
+        'package_manager': 'apt',
+        'install_cmd': 'apt-get update && apt-get install -y --no-install-recommends {packages} && rm -rf /var/lib/apt/lists/*',
+        'default_port': 3000,
+        'setup_cmds': [
+            'COPY package*.json ./',
+            'RUN npm ci --omit=dev',
+        ],
+        'default_cmd': '["node", "index.js"]',
+    },
+    'node:22-slim': {
+        'label': 'Node.js 22 Slim',
+        'family': 'node',
+        'variant': 'slim',
+        'package_manager': 'apt',
+        'install_cmd': 'apt-get update && apt-get install -y --no-install-recommends {packages} && rm -rf /var/lib/apt/lists/*',
+        'default_port': 3000,
+        'setup_cmds': [
+            'COPY package*.json ./',
+            'RUN npm ci --omit=dev',
+        ],
+        'default_cmd': '["node", "index.js"]',
+    },
+    'node:22-alpine': {
+        'label': 'Node.js 22 Alpine',
+        'family': 'node',
+        'variant': 'alpine',
+        'package_manager': 'apk',
+        'install_cmd': 'apk add --no-cache {packages}',
+        'default_port': 3000,
+        'setup_cmds': [
+            'COPY package*.json ./',
+            'RUN npm ci --omit=dev',
+        ],
+        'default_cmd': '["node", "index.js"]',
+    },
+    # ── Go ──────────────────────────────────────────────────
+    'golang:1.22': {
+        'label': 'Go 1.22',
+        'family': 'golang',
+        'variant': 'full',
+        'package_manager': 'apt',
+        'install_cmd': 'apt-get update && apt-get install -y --no-install-recommends {packages} && rm -rf /var/lib/apt/lists/*',
+        'default_port': 8080,
+        'setup_cmds': [
+            'COPY go.mod go.sum ./',
+            'RUN go mod download',
+            'COPY . .',
+            'RUN go build -o /app/server .',
+        ],
+        'default_cmd': '["/app/server"]',
+    },
+    'golang:1.22-alpine': {
+        'label': 'Go 1.22 Alpine',
+        'family': 'golang',
+        'variant': 'alpine',
+        'package_manager': 'apk',
+        'install_cmd': 'apk add --no-cache {packages}',
+        'default_port': 8080,
+        'setup_cmds': [
+            'COPY go.mod go.sum ./',
+            'RUN go mod download',
+            'COPY . .',
+            'RUN go build -o /app/server .',
+        ],
+        'default_cmd': '["/app/server"]',
+    },
+    # ── OpenJDK ─────────────────────────────────────────────
+    'openjdk:21-slim': {
+        'label': 'OpenJDK 21 Slim',
+        'family': 'openjdk',
+        'variant': 'slim',
+        'package_manager': 'apt',
+        'install_cmd': 'apt-get update && apt-get install -y --no-install-recommends {packages} && rm -rf /var/lib/apt/lists/*',
+        'default_port': 8080,
+        'setup_cmds': [
+            'COPY pom.xml .',
+            'RUN mvn dependency:go-offline -B',
+            'COPY src ./src',
+            'RUN mvn package -DskipTests',
+        ],
+        'default_cmd': '["java", "-jar", "target/app.jar"]',
+    },
+    'openjdk:21-alpine': {
+        'label': 'OpenJDK 21 Alpine',
+        'family': 'openjdk',
+        'variant': 'alpine',
+        'package_manager': 'apk',
+        'install_cmd': 'apk add --no-cache {packages}',
+        'default_port': 8080,
+        'setup_cmds': [
+            'COPY pom.xml .',
+            'RUN mvn dependency:go-offline -B',
+            'COPY src ./src',
+            'RUN mvn package -DskipTests',
+        ],
+        'default_cmd': '["java", "-jar", "target/app.jar"]',
+    },
+    # ── Ruby ────────────────────────────────────────────────
+    'ruby:3.3-slim': {
+        'label': 'Ruby 3.3 Slim',
+        'family': 'ruby',
+        'variant': 'slim',
+        'package_manager': 'apt',
+        'install_cmd': 'apt-get update && apt-get install -y --no-install-recommends {packages} && rm -rf /var/lib/apt/lists/*',
+        'default_port': 3000,
+        'setup_cmds': [
+            'COPY Gemfile Gemfile.lock ./',
+            'RUN bundle install --without development test',
+        ],
+        'default_cmd': '["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]',
+    },
+    'ruby:3.3-alpine': {
+        'label': 'Ruby 3.3 Alpine',
+        'family': 'ruby',
+        'variant': 'alpine',
+        'package_manager': 'apk',
+        'install_cmd': 'apk add --no-cache {packages}',
+        'default_port': 3000,
+        'setup_cmds': [
+            'COPY Gemfile Gemfile.lock ./',
+            'RUN bundle install --without development test',
+        ],
+        'default_cmd': '["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]',
+    },
+    # ── Rust ────────────────────────────────────────────────
+    'rust:1.76-slim': {
+        'label': 'Rust 1.76 Slim',
+        'family': 'rust',
+        'variant': 'slim',
+        'package_manager': 'apt',
+        'install_cmd': 'apt-get update && apt-get install -y --no-install-recommends {packages} && rm -rf /var/lib/apt/lists/*',
+        'default_port': 8080,
+        'setup_cmds': [
+            'COPY Cargo.toml Cargo.lock ./',
+            'RUN mkdir src && echo "fn main() {}" > src/main.rs && cargo build --release && rm src/main.rs',
+            'COPY src ./src',
+            'RUN cargo build --release',
+        ],
+        'default_cmd': '["./target/release/app"]',
+    },
+    # ── PHP ─────────────────────────────────────────────────
+    'php:8.3-fpm-alpine': {
+        'label': 'PHP 8.3 FPM Alpine',
+        'family': 'php',
+        'variant': 'alpine',
+        'package_manager': 'apk',
+        'install_cmd': 'apk add --no-cache {packages}',
+        'default_port': 9000,
+        'setup_cmds': [
+            'COPY composer.json composer.lock ./',
+            'RUN composer install --no-dev --optimize-autoloader',
+        ],
+        'default_cmd': '["php-fpm"]',
+    },
+    # ── Alpine (generic) ────────────────────────────────────
+    'alpine:latest': {
+        'label': 'Alpine Linux (latest)',
+        'family': 'alpine',
+        'variant': 'alpine',
+        'package_manager': 'apk',
+        'install_cmd': 'apk add --no-cache {packages}',
+        'default_port': 8080,
+        'setup_cmds': [
+            'COPY . .',
+        ],
+        'default_cmd': '["/bin/sh"]',
+    },
+}
+
+_FALLBACK_IMAGE = 'python:3.12-slim'
+
+
+def get_base_image_options():
+    """Return [{"value": tag, "label": label}, ...] for use in config_field selects."""
+    return [{'value': tag, 'label': meta['label']} for tag, meta in BASE_IMAGES.items()]
+
+
+# ─────────────────────────────────────────────────────────────
 # DOCKER
 # ─────────────────────────────────────────────────────────────
 
 DOCKERFILE_TMPL = """\
-FROM {{ base_image | default('python:3.11-slim') }}
+FROM {{ _image_meta.base_image }}
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . .
-
-EXPOSE {{ expose_port | default(8000) }}
-
-{% if healthcheck_path is defined %}
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:{{ expose_port | default(8000) }}{{ healthcheck_path }} || exit 1
+{% if _image_meta.extra_deps %}
+RUN {{ _image_meta.install_cmd }}
 {% endif %}
 
-CMD ["{{ entrypoint | default('python') }}", "{{ entrypoint_args | default('manage.py runserver 0.0.0.0:8000') }}"]
+{% for cmd in _image_meta.setup_cmds %}
+{{ cmd }}
+{% endfor %}
+
+{% if _image_meta.family not in ('golang', 'rust') %}
+COPY . .
+{% endif %}
+
+EXPOSE {{ expose_port | default(_image_meta.default_port) }}
+
+{% if healthcheck_path is defined %}
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \\
+  CMD curl -f http://localhost:{{ expose_port | default(_image_meta.default_port) }}{{ healthcheck_path }} || exit 1
+{% endif %}
+
+{% if entrypoint is defined and entrypoint %}
+CMD ["{{ entrypoint }}", "{{ entrypoint_args | default('') }}"]
+{% else %}
+CMD {{ _image_meta.default_cmd }}
+{% endif %}
 """
 
 DOCKER_COMPOSE_TMPL = """\
@@ -651,11 +891,36 @@ def generate_pipeline(tool_type: str, config_data: dict) -> dict:
     Returns { filename: rendered_string }.
     Errors per-file are caught and returned as inline comments.
     """
+    # Build a mutable copy so we don't mutate the caller's dict
+    ctx = dict(config_data)
+
+    # For docker, inject resolved image metadata so the template stays logic-free
+    if tool_type == 'docker':
+        tag = ctx.get('base_image', _FALLBACK_IMAGE)
+        meta = BASE_IMAGES.get(tag, BASE_IMAGES[_FALLBACK_IMAGE])
+
+        # Parse comma-separated extra_dependencies into a clean list
+        raw_deps = ctx.get('extra_dependencies', '') or ''
+        dep_list = [d.strip() for d in raw_deps.split(',') if d.strip()]
+        install_cmd = meta['install_cmd'].format(packages=' '.join(dep_list)) if dep_list else ''
+
+        ctx['_image_meta'] = {
+            'base_image': tag,
+            'family': meta['family'],
+            'variant': meta['variant'],
+            'package_manager': meta['package_manager'],
+            'install_cmd': install_cmd,
+            'extra_deps': bool(dep_list),
+            'setup_cmds': meta['setup_cmds'],
+            'default_port': meta['default_port'],
+            'default_cmd': meta['default_cmd'],
+        }
+
     tmpl_map = TEMPLATE_MAP.get(tool_type, {})
     result = {}
     for filename, tmpl_str in tmpl_map.items():
         try:
-            result[filename] = env.from_string(tmpl_str).render(**config_data)
+            result[filename] = env.from_string(tmpl_str).render(**ctx)
         except Exception as e:
             result[filename] = f"# Template render error: {e}\n# config_data: {config_data}"
     return result

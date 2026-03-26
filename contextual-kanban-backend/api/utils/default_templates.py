@@ -7,6 +7,13 @@ Tool-specific templates have tool_type set and config_fields populated with the
 input schema that CardDialog renders dynamically.
 """
 
+from api.utils.pipeline_generator import BASE_IMAGES
+
+# Derive base image option list from the registry so adding a new image
+# to BASE_IMAGES automatically updates this dropdown — no change needed here.
+_BASE_IMAGE_OPTIONS = [tag for tag in BASE_IMAGES]
+
+
 DEFAULT_TEMPLATES = [
     # ── Existing board templates (unchanged structure, new keys added) ──────
     {
@@ -133,8 +140,10 @@ DEFAULT_TEMPLATES = [
         "tags": [],
         "tool_type": "docker",
         "config_fields": [
-            {"id": "base_image", "label": "Base Image", "type": "text",
-             "placeholder": "python:3.11-slim", "options": [], "required": False},
+            {"id": "base_image", "label": "Base Image", "type": "select",
+             "placeholder": "Select a base image", "options": _BASE_IMAGE_OPTIONS, "required": False},
+            {"id": "extra_dependencies", "label": "Extra System Packages", "type": "text",
+             "placeholder": "git,curl,libpq-dev", "options": [], "required": False},
             {"id": "expose_port", "label": "Expose Port", "type": "number",
              "placeholder": "8000", "options": [], "required": False},
             {"id": "entrypoint", "label": "Entrypoint", "type": "text",
