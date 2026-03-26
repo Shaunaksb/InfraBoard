@@ -3,8 +3,15 @@ from django.db import models
 from .board import Board
 
 class Column(models.Model):
+    TOOL_CHOICES = [
+        ('none', 'None'),
+        ('docker', 'Docker'),
+        ('terraform', 'Terraform'),
+        ('github_actions', 'GitHub Actions'),
+    ]
     id = models.CharField(max_length=100, primary_key=True, blank=True)
     title = models.CharField(max_length=255)
+    tool_type = models.CharField(max_length=50, choices=TOOL_CHOICES, default='none')
     board = models.ForeignKey(Board, on_delete=models.CASCADE, related_name='columns')
     order = models.IntegerField(default=0)
 

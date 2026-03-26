@@ -6,10 +6,12 @@ interface KanbanCardItemProps {
   card: KanbanCard;
   index: number;
   config: BoardConfig;
+  isSelected?: boolean;
+  onSelect?: () => void;
   onClick: () => void;
 }
 
-const KanbanCardItem = ({ card, index, config, onClick }: KanbanCardItemProps) => {
+const KanbanCardItem = ({ card, index, config, isSelected, onSelect, onClick }: KanbanCardItemProps) => {
   const cardTags = config.tags.filter((t) => card.tags.includes(t.id));
   const descField = config.fields.find((f) => f.type === "textarea");
   const descValue = descField ? card.fields[descField.id] : undefined;
@@ -31,6 +33,19 @@ const KanbanCardItem = ({ card, index, config, onClick }: KanbanCardItemProps) =
           }`}
         >
           <div className="flex items-start gap-1.5">
+            {onSelect && (
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelect();
+                }}
+                className="mt-0.5 shrink-0 cursor-pointer"
+              >
+                <div className={`h-4 w-4 rounded-full border flex items-center justify-center transition-colors ${isSelected ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground'}`}>
+                  {isSelected && <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                </div>
+              </div>
+            )}
             <div {...provided.dragHandleProps} className="mt-0.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-60">
               <GripVertical className="h-4 w-4 text-muted-foreground" />
             </div>

@@ -11,6 +11,9 @@ import Organizations from "./pages/Organizations";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ShareRedirect from "./pages/ShareRedirect";
+import { ThemeProvider } from "@/components/theme-provider";
+import { useTheme } from "next-themes";
+import { useEffect } from "react";
 
 const queryClient = new QueryClient();
 
@@ -33,32 +36,49 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+// Component to dynamically sync the API user preferences with next-themes
+const ThemeSync = () => {
+  const { currentUser } = useUsers();
+  const { setTheme, theme } = useTheme();
+
+  useEffect(() => {
+    if (currentUser?.preferences?.theme && currentUser.preferences.theme !== theme) {
+      setTheme(currentUser.preferences.theme);
+    }
+  }, [currentUser?.preferences?.theme, setTheme, theme]);
+
+  return null;
+};
+
 const App = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            {/* Public Authentication Routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <ThemeSync />
+          <BrowserRouter>
+            <Routes>
+              {/* Public Authentication Routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
 
-            {/* Referral Onboarding Route */}
-            <Route path="/share/:boardId" element={<ShareRedirect />} />
+              {/* Referral Onboarding Route */}
+              <Route path="/share/:boardId" element={<ShareRedirect />} />
 
-            {/* Protected Application Routes */}
-            <Route path="/" element={<PrivateRoute><Index /></PrivateRoute>} />
-            <Route path="/user-preferences" element={<PrivateRoute><UserPreferences /></PrivateRoute>} />
-            <Route path="/organizations" element={<PrivateRoute><Organizations /></PrivateRoute>} />
+              {/* Protected Application Routes */}
+              <Route path="/" element={<PrivateRoute><Index /></PrivateRoute>} />
+              <Route path="/user-preferences" element={<PrivateRoute><UserPreferences /></PrivateRoute>} />
+              <Route path="/organizations" element={<PrivateRoute><Organizations /></PrivateRoute>} />
 
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 };
 

@@ -14,9 +14,11 @@ interface KanbanColumnProps {
   onAddCard: (columnId: string, card: Omit<KanbanCard, "id" | "order" | "createdAt"> & { newFiles?: File[] }) => void;
   onEditCard: (card: KanbanCard & { newFiles?: File[] }) => void;
   onDeleteCard: (cardId: string) => void;
+  selectedCardId?: string;
+  onSelectCard: (cardId: string) => void;
 }
 
-const KanbanColumnComponent = ({ column, config, allCards, onAddCard, onEditCard, onDeleteCard }: KanbanColumnProps) => {
+const KanbanColumnComponent = ({ column, config, allCards, onAddCard, onEditCard, onDeleteCard, selectedCardId, onSelectCard }: KanbanColumnProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<KanbanCard | null>(null);
@@ -46,6 +48,8 @@ const KanbanColumnComponent = ({ column, config, allCards, onAddCard, onEditCard
                 card={card}
                 index={index}
                 config={config}
+                isSelected={selectedCardId === card.id}
+                onSelect={() => onSelectCard(card.id)}
                 onClick={() => {
                   setEditingCard(card);
                   setPreviewOpen(true);
@@ -108,6 +112,7 @@ const KanbanColumnComponent = ({ column, config, allCards, onAddCard, onEditCard
         columnId={column.id}
         editCard={editingCard}
         allCards={allCards}
+        toolType={column.tool_type}
       />
     </div>
   );

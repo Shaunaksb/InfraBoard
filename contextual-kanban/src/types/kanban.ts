@@ -70,6 +70,7 @@ export interface KanbanCard {
   id: string;
   title: string;
   fields: Record<string, string>;
+  config_data?: Record<string, any>;
   tags: string[]; // tag IDs
   attachments?: FileAttachment[];
   columnId: string;
@@ -80,6 +81,7 @@ export interface KanbanCard {
 export interface KanbanColumn {
   id: string;
   title: string;
+  tool_type?: string;
   cards: KanbanCard[];
 }
 

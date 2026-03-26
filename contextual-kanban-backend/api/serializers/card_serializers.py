@@ -21,7 +21,7 @@ class CardSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Card
-        fields = ['id', 'title', 'fields', 'tags', 'attachments', 'order', 'columnId', 'createdAt']
+        fields = ['id', 'title', 'fields', 'config_data', 'tags', 'attachments', 'order', 'columnId', 'createdAt']
 
     def get_createdAt(self, obj):
         import datetime

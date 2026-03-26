@@ -13,6 +13,8 @@ import { useTemplates } from "@/hooks/useTemplates";
 import { cardsApi } from "@/lib/api";
 import { toast } from "sonner";
 import { useMemo } from "react";
+import ConfigPreviewDialog from "./ConfigPreviewDialog";
+import { Wand2 } from "lucide-react";
 
 interface KanbanBoardViewProps {
   board: KanbanBoard;
@@ -42,6 +44,20 @@ const KanbanBoardView = ({ board, onBoardChange }: KanbanBoardViewProps) => {
   const sidebar = useSidebar();
   const { addTemplate } = useTemplates();
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+  const [selectedCards, setSelectedCards] = useState<Record<string, string>>({});
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+
+  const handleSelectCard = (columnId: string, cardId: string) => {
+    setSelectedCards((prev) => {
+      const isAlreadySelected = prev[columnId] === cardId;
+      if (isAlreadySelected) {
+        const next = { ...prev };
+        delete next[columnId];
+        return next;
+      }
+      return { ...prev, [columnId]: cardId };
+    });
+  };
 
   // Sync sidebar with focus mode
   useEffect(() => {
@@ -258,6 +274,16 @@ const KanbanBoardView = ({ board, onBoardChange }: KanbanBoardViewProps) => {
           <ShareBoardDialog board={board} onUpdateBoard={onBoardChange} />
 
           <Button
+            variant="default"
+            size="sm"
+            onClick={() => setPreviewDialogOpen(true)}
+            disabled={Object.keys(selectedCards).length === 0}
+            className="text-sm gap-1.5"
+          >
+            <Wand2 className="h-4 w-4" /> Generate Pipeline
+          </Button>
+
+          <Button
             variant="ghost"
             size="sm"
             onClick={handleSaveAsTemplate}
@@ -283,6 +309,8 @@ const KanbanBoardView = ({ board, onBoardChange }: KanbanBoardViewProps) => {
                 column={column}
                 config={board.config}
                 allCards={allCards}
+                selectedCardId={selectedCards[column.id]}
+                onSelectCard={(cardId) => handleSelectCard(column.id, cardId)}
                 onAddCard={addCard}
                 onEditCard={editCard}
                 onDeleteCard={deleteCard}
@@ -291,6 +319,13 @@ const KanbanBoardView = ({ board, onBoardChange }: KanbanBoardViewProps) => {
           </div>
         </DragDropContext>
       </div>
+
+      <ConfigPreviewDialog
+        open={previewDialogOpen}
+        onClose={() => setPreviewDialogOpen(false)}
+        selectedCards={selectedCards}
+        boardId={board.id}
+      />
     </div>
   );
 };

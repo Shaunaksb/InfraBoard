@@ -7,7 +7,7 @@ class ColumnSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Column
-        fields = ['id', 'title', 'order', 'cards', 'board']
+        fields = ['id', 'title', 'tool_type', 'order', 'cards', 'board']
         extra_kwargs = {'board': {'write_only': True}}
 
 class BoardSerializer(serializers.ModelSerializer):
@@ -32,7 +32,16 @@ class BoardSerializer(serializers.ModelSerializer):
         column_titles = validated_data.pop('_column_names', [])
         board = super().create(validated_data)
         for order, title in enumerate(column_titles):
-            Column.objects.create(board=board, title=title, order=order)
+            tool_type = 'none'
+            title_lower = title.lower()
+            if 'docker' in title_lower:
+                tool_type = 'docker'
+            elif 'terraform' in title_lower:
+                tool_type = 'terraform'
+            elif 'github' in title_lower or 'action' in title_lower:
+                tool_type = 'github_actions'
+                
+            Column.objects.create(board=board, title=title, order=order, tool_type=tool_type)
         return board
 
     def to_representation(self, instance):

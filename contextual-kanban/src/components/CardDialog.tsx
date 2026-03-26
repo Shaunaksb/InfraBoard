@@ -29,6 +29,7 @@ interface CardDialogProps {
   columnId: string;
   editCard?: KanbanCard | null;
   allCards: KanbanCard[];
+  toolType?: string;
 }
 
 const formatBytes = (bytes: number) => {
@@ -43,9 +44,10 @@ const formatTime = (seconds: number) => {
   return `${m}:${s.toString().padStart(2, "0")}`;
 };
 
-const CardDialog = ({ open, onClose, onSave, onDelete, config, columnId, editCard, allCards }: CardDialogProps) => {
+const CardDialog = ({ open, onClose, onSave, onDelete, config, columnId, editCard, allCards, toolType }: CardDialogProps) => {
   const [title, setTitle] = useState(editCard?.title || "");
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(editCard?.fields || {});
+  const [configData, setConfigData] = useState<Record<string, any>>(editCard?.config_data || {});
   const [selectedTags, setSelectedTags] = useState<string[]>(editCard?.tags || []);
   const [attachments, setAttachments] = useState<FileAttachment[]>(editCard?.attachments || []);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -109,6 +111,7 @@ const CardDialog = ({ open, onClose, onSave, onDelete, config, columnId, editCar
     onSave({
       title: title.trim(),
       fields: fieldValues,
+      config_data: configData,
       tags: selectedTags,
       attachments, // We'll pass the existing ones
       columnId,
@@ -116,6 +119,7 @@ const CardDialog = ({ open, onClose, onSave, onDelete, config, columnId, editCar
     } as any); // using 'any' to bypass strict type here temporarily, better to update the props interface
     setTitle("");
     setFieldValues({});
+    setConfigData({});
     setSelectedTags([]);
     setAttachments([]);
     setPendingFiles([]);
@@ -181,6 +185,48 @@ const CardDialog = ({ open, onClose, onSave, onDelete, config, columnId, editCar
               <div className="mt-1">{renderField(field)}</div>
             </div>
           ))}
+
+          {toolType === 'docker' && (
+            <div className="space-y-3 rounded-md border border-border p-3 bg-card mt-4">
+              <h4 className="text-sm font-semibold text-primary">Docker Configuration</h4>
+              <div>
+                <Label className="text-xs">Base Image</Label>
+                <Input value={configData.base_image || ""} onChange={(e) => setConfigData({...configData, base_image: e.target.value})} placeholder="python:3.9-slim" className="mt-1 h-8 text-xs" />
+              </div>
+              <div>
+                <Label className="text-xs">Run Commands</Label>
+                <Input value={configData.run_commands || ""} onChange={(e) => setConfigData({...configData, run_commands: e.target.value})} placeholder="apt-get update && apt-get install -y curl" className="mt-1 h-8 text-xs" />
+              </div>
+              <div>
+                <Label className="text-xs">Expose Port</Label>
+                <Input value={configData.expose_port || ""} onChange={(e) => setConfigData({...configData, expose_port: e.target.value})} placeholder="8000" className="mt-1 h-8 text-xs" />
+              </div>
+            </div>
+          )}
+
+          {toolType === 'terraform' && (
+            <div className="space-y-3 rounded-md border border-border p-3 bg-card mt-4">
+              <h4 className="text-sm font-semibold text-primary">Terraform Configuration</h4>
+              <div>
+                <Label className="text-xs">Provider</Label>
+                <Input value={configData.provider || ""} onChange={(e) => setConfigData({...configData, provider: e.target.value})} placeholder="aws" className="mt-1 h-8 text-xs" />
+              </div>
+              <div>
+                <Label className="text-xs">Instance Type</Label>
+                <Input value={configData.instance_type || ""} onChange={(e) => setConfigData({...configData, instance_type: e.target.value})} placeholder="t2.micro" className="mt-1 h-8 text-xs" />
+              </div>
+            </div>
+          )}
+
+          {toolType === 'github_actions' && (
+            <div className="space-y-3 rounded-md border border-border p-3 bg-card mt-4">
+              <h4 className="text-sm font-semibold text-primary">GitHub Actions Configuration</h4>
+              <div>
+                <Label className="text-xs">Branch</Label>
+                <Input value={configData.branch || ""} onChange={(e) => setConfigData({...configData, branch: e.target.value})} placeholder="main" className="mt-1 h-8 text-xs" />
+              </div>
+            </div>
+          )}
 
           {config.tags.length > 0 && (
             <div>

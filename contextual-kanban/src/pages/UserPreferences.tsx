@@ -8,9 +8,11 @@ import { useUsers } from "@/hooks/useUsers";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useTheme } from "next-themes";
 
 const UserPreferences = () => {
     const { currentUser, updateUser } = useUsers();
+    const { setTheme } = useTheme();
 
     // Note: Using useBoards just to provide standard sidebar props for now
     const {
@@ -84,7 +86,10 @@ const UserPreferences = () => {
                                     </div>
                                     <Select
                                         value={currentUser.preferences.theme}
-                                        onValueChange={(val) => handleUpdatePreference("theme", val)}
+                                        onValueChange={(val) => {
+                                            handleUpdatePreference("theme", val);
+                                            setTheme(val);
+                                        }}
                                     >
                                         <SelectTrigger className="w-[180px]">
                                             <SelectValue placeholder="Theme" />
