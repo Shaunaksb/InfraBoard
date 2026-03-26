@@ -4,10 +4,15 @@ from .board import Board
 
 class Column(models.Model):
     TOOL_CHOICES = [
-        ('none', 'None'),
-        ('docker', 'Docker'),
-        ('terraform', 'Terraform'),
+        ('none',           'None'),
+        ('docker',         'Docker'),
+        ('kubernetes',     'Kubernetes'),
+        ('terraform',      'Terraform'),
         ('github_actions', 'GitHub Actions'),
+        ('aws',            'AWS'),
+        ('gcp',            'GCP'),
+        ('prometheus',     'Prometheus'),
+        ('grafana',        'Grafana'),
     ]
     id = models.CharField(max_length=100, primary_key=True, blank=True)
     title = models.CharField(max_length=255)

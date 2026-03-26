@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { KanbanColumn as KanbanColumnType, KanbanCard, BoardConfig } from "@/types/kanban";
+import { KanbanColumn as KanbanColumnType, KanbanCard, BoardConfig, BoardTemplate } from "@/types/kanban";
 import { Droppable } from "@hello-pangea/dnd";
 import KanbanCardItem from "./KanbanCardItem";
 import CardDialog from "./CardDialog";
@@ -7,10 +7,22 @@ import CardPreviewDialog from "./CardPreviewDialog";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+const TOOL_BADGE_MAP: Record<string, { label: string; color: string }> = {
+  docker:         { label: 'Docker',          color: 'bg-blue-500/15 text-blue-600 border-blue-500/30' },
+  kubernetes:     { label: 'Kubernetes',      color: 'bg-cyan-500/15 text-cyan-600 border-cyan-500/30' },
+  aws:            { label: 'AWS',             color: 'bg-orange-500/15 text-orange-600 border-orange-500/30' },
+  gcp:            { label: 'GCP',             color: 'bg-sky-500/15 text-sky-600 border-sky-500/30' },
+  terraform:      { label: 'Terraform',       color: 'bg-purple-500/15 text-purple-600 border-purple-500/30' },
+  github_actions: { label: 'GitHub Actions',  color: 'bg-gray-500/15 text-gray-600 border-gray-500/30' },
+  prometheus:     { label: 'Prometheus',      color: 'bg-red-500/15 text-red-600 border-red-500/30' },
+  grafana:        { label: 'Grafana',         color: 'bg-yellow-500/15 text-yellow-600 border-yellow-500/30' },
+};
+
 interface KanbanColumnProps {
   column: KanbanColumnType;
   config: BoardConfig;
   allCards: KanbanCard[];
+  templates: BoardTemplate[];
   onAddCard: (columnId: string, card: Omit<KanbanCard, "id" | "order" | "createdAt"> & { newFiles?: File[] }) => void;
   onEditCard: (card: KanbanCard & { newFiles?: File[] }) => void;
   onDeleteCard: (cardId: string) => void;
@@ -18,10 +30,16 @@ interface KanbanColumnProps {
   onSelectCard: (cardId: string) => void;
 }
 
-const KanbanColumnComponent = ({ column, config, allCards, onAddCard, onEditCard, onDeleteCard, selectedCardId, onSelectCard }: KanbanColumnProps) => {
+const KanbanColumnComponent = ({ column, config, allCards, templates, onAddCard, onEditCard, onDeleteCard, selectedCardId, onSelectCard }: KanbanColumnProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<KanbanCard | null>(null);
+
+  // Look up the tool template for this column's tool_type
+  const toolTemplate = templates.find(
+    (t) => t.tool_type === column.tool_type && (t.config_fields?.length ?? 0) > 0
+  );
+  const configFields = toolTemplate?.config_fields ?? [];
 
   return (
     <div className="flex h-full min-w-[250px] max-w-[400px] flex-1 shrink-0 flex-col rounded-xl bg-column p-2">
@@ -29,9 +47,16 @@ const KanbanColumnComponent = ({ column, config, allCards, onAddCard, onEditCard
         <h3 className="text-sm font-semibold tracking-wide text-column-header uppercase">
           {column.title}
         </h3>
-        <span className="rounded-md bg-secondary px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
-          {column.cards.length}
-        </span>
+        <div className="flex items-center gap-1.5">
+          {column.tool_type && column.tool_type !== 'none' && TOOL_BADGE_MAP[column.tool_type] && (
+            <span className={`text-xs px-1.5 py-0.5 rounded border font-medium ${TOOL_BADGE_MAP[column.tool_type].color}`}>
+              {toolTemplate?.name || TOOL_BADGE_MAP[column.tool_type].label}
+            </span>
+          )}
+          <span className="rounded-md bg-secondary px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
+            {column.cards.length}
+          </span>
+        </div>
       </div>
 
       <Droppable droppableId={column.id}>
@@ -86,6 +111,8 @@ const KanbanColumnComponent = ({ column, config, allCards, onAddCard, onEditCard
           }}
           card={editingCard}
           config={config}
+          configFields={configFields}
+          toolName={toolTemplate?.name}
         />
       )}
 
@@ -112,7 +139,7 @@ const KanbanColumnComponent = ({ column, config, allCards, onAddCard, onEditCard
         columnId={column.id}
         editCard={editingCard}
         allCards={allCards}
-        toolType={column.tool_type}
+        configFields={configFields}
       />
     </div>
   );

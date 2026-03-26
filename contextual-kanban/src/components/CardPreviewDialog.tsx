@@ -1,4 +1,4 @@
-import { KanbanCard, BoardConfig, FileAttachment } from "@/types/kanban";
+import { KanbanCard, BoardConfig, FileAttachment, ConfigFieldSchema } from "@/types/kanban";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Pencil, Download, FileIcon, Play } from "lucide-react";
@@ -9,6 +9,8 @@ interface CardPreviewDialogProps {
   onEdit: () => void;
   card: KanbanCard;
   config: BoardConfig;
+  configFields?: ConfigFieldSchema[];
+  toolName?: string;
 }
 
 const formatBytes = (bytes: number) => {
@@ -17,7 +19,7 @@ const formatBytes = (bytes: number) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
-const CardPreviewDialog = ({ open, onClose, onEdit, card, config }: CardPreviewDialogProps) => {
+const CardPreviewDialog = ({ open, onClose, onEdit, card, config, configFields = [], toolName }: CardPreviewDialogProps) => {
   const cardTags = config.tags.filter((t) => card.tags.includes(t.id));
   const attachments = card.attachments || [];
 
@@ -120,6 +122,32 @@ const CardPreviewDialog = ({ open, onClose, onEdit, card, config }: CardPreviewD
               </div>
             );
           })}
+
+          {/* Config Data */}
+          {configFields.length > 0 && (
+            <div className="pt-2">
+              <p className="text-xs font-medium text-primary uppercase tracking-wider mb-2">
+                {toolName || "Tool"} Configuration
+              </p>
+              <div className="rounded-lg border border-border bg-card/50 p-3 space-y-3">
+                {configFields.map((field) => {
+                  const value = card.config_data?.[field.id];
+                  if (value === undefined || value === "") return null;
+                  
+                  return (
+                    <div key={field.id}>
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">{field.label}</p>
+                      {field.type === 'checkbox' ? (
+                        <p className="text-sm text-foreground">{value ? 'Enabled' : 'Disabled'}</p>
+                      ) : (
+                        <p className="text-sm text-foreground break-all">{String(value)}</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Attachments */}
           {attachments.length > 0 && (

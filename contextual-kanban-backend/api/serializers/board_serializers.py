@@ -34,13 +34,23 @@ class BoardSerializer(serializers.ModelSerializer):
         for order, title in enumerate(column_titles):
             tool_type = 'none'
             title_lower = title.lower()
-            if 'docker' in title_lower:
+            if 'docker' in title_lower or 'container' in title_lower:
                 tool_type = 'docker'
-            elif 'terraform' in title_lower:
+            elif 'kubernetes' in title_lower or 'k8s' in title_lower or 'helm' in title_lower:
+                tool_type = 'kubernetes'
+            elif 'aws' in title_lower or 'eks' in title_lower:
+                tool_type = 'aws'
+            elif 'gcp' in title_lower or 'gke' in title_lower or 'google' in title_lower:
+                tool_type = 'gcp'
+            elif 'terraform' in title_lower or 'infra' in title_lower:
                 tool_type = 'terraform'
-            elif 'github' in title_lower or 'action' in title_lower:
+            elif 'github' in title_lower or 'action' in title_lower or 'ci' in title_lower:
                 tool_type = 'github_actions'
-                
+            elif 'prometheus' in title_lower or 'alert' in title_lower:
+                tool_type = 'prometheus'
+            elif 'grafana' in title_lower or 'dashboard' in title_lower or 'monitor' in title_lower:
+                tool_type = 'grafana'
+
             Column.objects.create(board=board, title=title, order=order, tool_type=tool_type)
         return board
 

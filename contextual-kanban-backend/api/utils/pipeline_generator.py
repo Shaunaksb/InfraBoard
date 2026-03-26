@@ -1,55 +1,661 @@
-def generate_dockerfile(config_data):
-    base_image = config_data.get('base_image', 'python:3.9-slim')
-    run_commands = config_data.get('run_commands', '')
-    expose_port = config_data.get('expose_port', '8000')
+"""
+DevOps Pipeline Generator
+Renders configuration files for each tool_type using Jinja2 templates.
+config_data comes from Card.config_data (JSONField).
+"""
+from jinja2 import Environment, BaseLoader, StrictUndefined
 
-    template = f"FROM {base_image}\n"
-    template += f"WORKDIR /app\n"
-    template += f"COPY . /app\n"
-    if run_commands:
-        template += f"RUN {run_commands}\n"
-    if expose_port:
-        template += f"EXPOSE {expose_port}\n"
-    template += f"CMD [\"python\", \"manage.py\", \"runserver\", \"0.0.0.0:{expose_port}\"]\n"
-    
-    return template
+env = Environment(
+    loader=BaseLoader(),
+    undefined=StrictUndefined,
+    trim_blocks=True,
+    lstrip_blocks=True,
+)
 
-def generate_terraform(config_data):
-    provider = config_data.get('provider', 'aws')
-    instance_type = config_data.get('instance_type', 't2.micro')
+# ─────────────────────────────────────────────────────────────
+# DOCKER
+# ─────────────────────────────────────────────────────────────
 
-    template = f"provider \"{provider}\" {{\n"
-    template += f"  region = \"us-east-1\"\n"
-    template += f"}}\n\n"
-    template += f"resource \"aws_instance\" \"app_server\" {{\n"
-    template += f"  ami           = \"ami-0c55b159cbfafe1f0\"\n"
-    template += f"  instance_type = \"{instance_type}\"\n"
-    template += f"}}\n"
-    
-    return template
+DOCKERFILE_TMPL = """\
+FROM {{ base_image | default('python:3.11-slim') }}
 
-def generate_github_actions(config_data):
-    branch = config_data.get('branch', 'main')
+WORKDIR /app
 
-    template = f"name: CI Pipeline\n"
-    template += f"on:\n"
-    template += f"  push:\n"
-    template += f"    branches: [ \"{branch}\" ]\n"
-    template += f"jobs:\n"
-    template += f"  build:\n"
-    template += f"    runs-on: ubuntu-latest\n"
-    template += f"    steps:\n"
-    template += f"    - uses: actions/checkout@v3\n"
-    template += f"    - name: Run Scripts\n"
-    template += f"      run: echo \"Pipeline running...\"\n"
-    
-    return template
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-def generate_pipeline(tool_type, config_data):
-    if tool_type == 'docker':
-        return {"Dockerfile": generate_dockerfile(config_data)}
-    elif tool_type == 'terraform':
-        return {"main.tf": generate_terraform(config_data)}
-    elif tool_type == 'github_actions':
-        return {".github/workflows/deploy.yml": generate_github_actions(config_data)}
-    return {}
+COPY . .
+
+EXPOSE {{ expose_port | default(8000) }}
+
+{% if healthcheck_path is defined %}
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:{{ expose_port | default(8000) }}{{ healthcheck_path }} || exit 1
+{% endif %}
+
+CMD ["{{ entrypoint | default('python') }}", "{{ entrypoint_args | default('manage.py runserver 0.0.0.0:8000') }}"]
+"""
+
+DOCKER_COMPOSE_TMPL = """\
+version: '3.9'
+
+services:
+  app:
+    build: .
+    image: {{ image_name | default('app') }}:{{ image_tag | default('latest') }}
+    ports:
+      - "{{ expose_port | default(8000) }}:{{ expose_port | default(8000) }}"
+    environment:
+      - DJANGO_ENV={{ environment | default('development') }}
+    {% if include_db | default(false) %}
+    depends_on:
+      - db
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: {{ db_name | default('app_db') }}
+      POSTGRES_USER: {{ db_user | default('postgres') }}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    {% endif %}
+    {% if include_redis | default(false) %}
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    {% endif %}
+
+{% if include_db | default(false) %}
+volumes:
+  postgres_data:
+{% endif %}
+"""
+
+DOCKERIGNORE_TMPL = """\
+__pycache__/
+*.pyc
+*.pyo
+.env
+.env.*
+.git
+.gitignore
+.venv
+node_modules/
+dist/
+*.log
+"""
+
+# ─────────────────────────────────────────────────────────────
+# KUBERNETES
+# ─────────────────────────────────────────────────────────────
+
+K8S_DEPLOYMENT_TMPL = """\
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ app_name | default('app') }}
+  namespace: {{ namespace | default('default') }}
+  labels:
+    app: {{ app_name | default('app') }}
+    environment: {{ environment | default('dev') }}
+spec:
+  replicas: {{ replicas | default(2) }}
+  selector:
+    matchLabels:
+      app: {{ app_name | default('app') }}
+  template:
+    metadata:
+      labels:
+        app: {{ app_name | default('app') }}
+      {% if enable_prometheus_scrape | default(false) %}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "{{ expose_port | default(8000) }}"
+        prometheus.io/path: "{{ metrics_path | default('/metrics') }}"
+      {% endif %}
+    spec:
+      containers:
+        - name: {{ app_name | default('app') }}
+          image: {{ image_repo | default('myapp') }}:{{ image_tag | default('latest') }}
+          ports:
+            - containerPort: {{ expose_port | default(8000) }}
+          resources:
+            requests:
+              cpu: {{ cpu_request | default('100m') }}
+              memory: {{ memory_request | default('128Mi') }}
+            limits:
+              cpu: {{ cpu_limit | default('500m') }}
+              memory: {{ memory_limit | default('256Mi') }}
+          livenessProbe:
+            httpGet:
+              path: {{ health_path | default('/health') }}
+              port: {{ expose_port | default(8000) }}
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: {{ health_path | default('/health') }}
+              port: {{ expose_port | default(8000) }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+"""
+
+K8S_SERVICE_TMPL = """\
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ app_name | default('app') }}-svc
+  namespace: {{ namespace | default('default') }}
+spec:
+  selector:
+    app: {{ app_name | default('app') }}
+  type: {{ service_type | default('ClusterIP') }}
+  ports:
+    - protocol: TCP
+      port: {{ service_port | default(80) }}
+      targetPort: {{ expose_port | default(8000) }}
+"""
+
+K8S_INGRESS_TMPL = """\
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ app_name | default('app') }}-ingress
+  namespace: {{ namespace | default('default') }}
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: {{ hostname | default('app.example.com') }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ app_name | default('app') }}-svc
+                port:
+                  number: {{ service_port | default(80) }}
+  {% if enable_tls | default(false) %}
+  tls:
+    - hosts:
+        - {{ hostname | default('app.example.com') }}
+      secretName: {{ app_name | default('app') }}-tls
+  {% endif %}
+"""
+
+# ─────────────────────────────────────────────────────────────
+# AWS (Terraform)
+# ─────────────────────────────────────────────────────────────
+
+AWS_MAIN_TF_TMPL = """\
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = var.region
+}
+
+# EKS Cluster
+resource "aws_eks_cluster" "main" {
+  name     = var.cluster_name
+  role_arn = aws_iam_role.eks_role.arn
+  version  = "{{ k8s_version | default('1.29') }}"
+
+  vpc_config {
+    subnet_ids = var.subnet_ids
+  }
+
+  tags = {
+    Environment = var.environment
+    ManagedBy   = "cknbn-template-engine"
+  }
+}
+
+# IAM Role for EKS
+resource "aws_iam_role" "eks_role" {
+  name = "${var.cluster_name}-eks-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "eks.amazonaws.com" }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "eks_policy" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+  role       = aws_iam_role.eks_role.name
+}
+
+# Node Group
+resource "aws_eks_node_group" "main" {
+  cluster_name    = aws_eks_cluster.main.name
+  node_group_name = "${var.cluster_name}-nodes"
+  node_role_arn   = aws_iam_role.eks_role.arn
+  subnet_ids      = var.subnet_ids
+  instance_types  = ["{{ instance_type | default('t3.medium') }}"]
+
+  scaling_config {
+    desired_size = {{ desired_nodes | default(2) }}
+    max_size     = {{ max_nodes | default(4) }}
+    min_size     = {{ min_nodes | default(1) }}
+  }
+}
+
+# S3 Bucket for app storage
+{% if include_s3 | default(false) %}
+resource "aws_s3_bucket" "app_bucket" {
+  bucket = "{{ s3_bucket_name | default('my-app-bucket') }}-${var.environment}"
+
+  tags = {
+    Environment = var.environment
+    ManagedBy   = "cknbn-template-engine"
+  }
+}
+{% endif %}
+"""
+
+AWS_VARIABLES_TF_TMPL = """\
+variable "region" {
+  description = "AWS region"
+  type        = string
+  default     = "{{ region | default('us-east-1') }}"
+}
+
+variable "cluster_name" {
+  description = "EKS cluster name"
+  type        = string
+  default     = "{{ cluster_name | default('app-cluster') }}"
+}
+
+variable "environment" {
+  description = "Deployment environment"
+  type        = string
+  default     = "{{ environment | default('dev') }}"
+}
+
+variable "subnet_ids" {
+  description = "List of subnet IDs"
+  type        = list(string)
+  default     = []
+}
+"""
+
+AWS_OUTPUTS_TF_TMPL = """\
+output "cluster_endpoint" {
+  description = "EKS cluster endpoint"
+  value       = aws_eks_cluster.main.endpoint
+}
+
+output "cluster_name" {
+  description = "EKS cluster name"
+  value       = aws_eks_cluster.main.name
+}
+
+output "kubeconfig_command" {
+  description = "Command to update kubeconfig"
+  value       = "aws eks update-kubeconfig --region ${var.region} --name ${var.cluster_name}"
+}
+"""
+
+# ─────────────────────────────────────────────────────────────
+# GCP (Terraform)
+# ─────────────────────────────────────────────────────────────
+
+GCP_MAIN_TF_TMPL = """\
+terraform {
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "google" {
+  project = var.project_id
+  region  = var.region
+}
+
+# GKE Cluster
+resource "google_container_cluster" "main" {
+  name     = var.cluster_name
+  location = var.region
+
+  remove_default_node_pool = true
+  initial_node_count       = 1
+
+  networking_mode = "VPC_NATIVE"
+  ip_allocation_policy {}
+
+  workload_identity_config {
+    workload_pool = "${var.project_id}.svc.id.goog"
+  }
+}
+
+# Node Pool
+resource "google_container_node_pool" "main" {
+  name       = "${var.cluster_name}-node-pool"
+  location   = var.region
+  cluster    = google_container_cluster.main.name
+  node_count = {{ node_count | default(2) }}
+
+  node_config {
+    machine_type = "{{ machine_type | default('e2-standard-2') }}"
+    disk_size_gb = {{ disk_size_gb | default(50) }}
+    oauth_scopes = [
+      "https://www.googleapis.com/auth/cloud-platform"
+    ]
+    labels = {
+      environment = var.environment
+    }
+  }
+
+  autoscaling {
+    min_node_count = {{ min_nodes | default(1) }}
+    max_node_count = {{ max_nodes | default(4) }}
+  }
+}
+
+{% if include_cloud_sql | default(false) %}
+# Cloud SQL
+resource "google_sql_database_instance" "main" {
+  name             = "{{ db_instance_name | default('app-db') }}"
+  database_version = "POSTGRES_15"
+  region           = var.region
+
+  settings {
+    tier = "{{ db_tier | default('db-f1-micro') }}"
+  }
+}
+{% endif %}
+"""
+
+GCP_VARIABLES_TF_TMPL = """\
+variable "project_id" {
+  description = "GCP project ID"
+  type        = string
+  default     = "{{ project_id | default('my-gcp-project') }}"
+}
+
+variable "region" {
+  description = "GCP region"
+  type        = string
+  default     = "{{ region | default('us-central1') }}"
+}
+
+variable "cluster_name" {
+  description = "GKE cluster name"
+  type        = string
+  default     = "{{ cluster_name | default('app-cluster') }}"
+}
+
+variable "environment" {
+  description = "Deployment environment"
+  type        = string
+  default     = "{{ environment | default('dev') }}"
+}
+"""
+
+GCP_OUTPUTS_TF_TMPL = """\
+output "cluster_name" {
+  value = google_container_cluster.main.name
+}
+
+output "cluster_endpoint" {
+  value     = google_container_cluster.main.endpoint
+  sensitive = true
+}
+
+output "kubeconfig_command" {
+  value = "gcloud container clusters get-credentials ${var.cluster_name} --region ${var.region} --project ${var.project_id}"
+}
+"""
+
+# ─────────────────────────────────────────────────────────────
+# PROMETHEUS
+# ─────────────────────────────────────────────────────────────
+
+PROMETHEUS_CONFIG_TMPL = """\
+global:
+  scrape_interval: {{ scrape_interval | default('15s') }}
+  evaluation_interval: {{ evaluation_interval | default('15s') }}
+  external_labels:
+    environment: {{ environment | default('dev') }}
+    app: {{ app_name | default('app') }}
+
+rule_files:
+  - "alert_rules.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["{{ alertmanager_host | default('alertmanager:9093') }}"]
+
+scrape_configs:
+  - job_name: '{{ app_name | default('app') }}'
+    static_configs:
+      - targets: ["{{ app_host | default('app:8000') }}"]
+    metrics_path: {{ metrics_path | default('/metrics') }}
+
+  - job_name: 'kubernetes-pods'
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names: ["{{ namespace | default('default') }}"]
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: "true"
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+        action: replace
+        target_label: __metrics_path__
+        regex: (.+)
+      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        regex: ([^:]+)(?:\\\\d+)?;(\\\\d+)
+        replacement: $1:$2
+        target_label: __address__
+
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ["{{ node_exporter_host | default('node-exporter:9100') }}"]
+"""
+
+PROMETHEUS_ALERT_RULES_TMPL = """\
+groups:
+  - name: {{ app_name | default('app') }}_alerts
+    rules:
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > {{ error_rate_threshold | default(0.05) }}
+        for: 5m
+        labels:
+          severity: critical
+          environment: {{ environment | default('dev') }}
+        annotations:
+          summary: "High HTTP error rate on {{ app_name | default('app') }}"
+          description: "Error rate above {{ error_rate_threshold | default('5%') }} for 5 minutes."
+
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > {{ latency_threshold_seconds | default(2) }}
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High p95 latency on {{ app_name | default('app') }}"
+          description: "p95 latency exceeds {{ latency_threshold_seconds | default(2) }}s."
+
+      - alert: PodCrashLooping
+        expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Pod crash-looping in namespace {{ namespace | default('default') }}"
+
+      - alert: HighMemoryUsage
+        expr: container_memory_usage_bytes / container_spec_memory_limit_bytes > {{ memory_threshold | default(0.85) }}
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Memory usage above {{ memory_threshold | default('85%') }}"
+"""
+
+# ─────────────────────────────────────────────────────────────
+# GRAFANA
+# ─────────────────────────────────────────────────────────────
+
+GRAFANA_DATASOURCE_TMPL = """\
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://{{ prometheus_host | default('prometheus:9090') }}
+    isDefault: true
+    jsonData:
+      timeInterval: {{ scrape_interval | default('15s') }}
+      httpMethod: POST
+"""
+
+GRAFANA_DASHBOARD_TMPL = """\
+{
+  "title": "{{ app_name | default('App') }} Overview",
+  "uid": "{{ app_name | default('app') | lower | replace(' ', '-') }}-overview",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "{{ refresh_interval | default('30s') }}",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Request Rate",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [{
+        "expr": "rate(http_requests_total{job='{{ app_name | default('app') }}'}[5m])",
+        "legendFormat": "{{method}} {{status}}"
+      }]
+    },
+    {
+      "id": 2,
+      "title": "p95 Latency",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [{
+        "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job='{{ app_name | default('app') }}'}[5m]))",
+        "legendFormat": "p95"
+      }]
+    },
+    {
+      "id": 3,
+      "title": "Error Rate",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 8, "w": 6, "h": 4 },
+      "targets": [{
+        "expr": "rate(http_requests_total{status=~'5..', job='{{ app_name | default('app') }}'}[5m])",
+        "legendFormat": "errors/s"
+      }]
+    },
+    {
+      "id": 4,
+      "title": "Pod Memory Usage",
+      "type": "gauge",
+      "gridPos": { "x": 6, "y": 8, "w": 6, "h": 4 },
+      "targets": [{
+        "expr": "container_memory_usage_bytes{namespace='{{ namespace | default('default') }}'}",
+        "legendFormat": "{{pod}}"
+      }]
+    }
+  ],
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {}
+}
+"""
+
+# ─────────────────────────────────────────────────────────────
+# DISPATCH TABLE
+# ─────────────────────────────────────────────────────────────
+
+TEMPLATE_MAP = {
+    'docker': {
+        'Dockerfile':          DOCKERFILE_TMPL,
+        'docker-compose.yml':  DOCKER_COMPOSE_TMPL,
+        '.dockerignore':       DOCKERIGNORE_TMPL,
+    },
+    'kubernetes': {
+        'k8s/deployment.yaml': K8S_DEPLOYMENT_TMPL,
+        'k8s/service.yaml':    K8S_SERVICE_TMPL,
+        'k8s/ingress.yaml':    K8S_INGRESS_TMPL,
+    },
+    'aws': {
+        'terraform/aws/main.tf':      AWS_MAIN_TF_TMPL,
+        'terraform/aws/variables.tf': AWS_VARIABLES_TF_TMPL,
+        'terraform/aws/outputs.tf':   AWS_OUTPUTS_TF_TMPL,
+    },
+    'gcp': {
+        'terraform/gcp/main.tf':      GCP_MAIN_TF_TMPL,
+        'terraform/gcp/variables.tf': GCP_VARIABLES_TF_TMPL,
+        'terraform/gcp/outputs.tf':   GCP_OUTPUTS_TF_TMPL,
+    },
+    'prometheus': {
+        'monitoring/prometheus.yml':       PROMETHEUS_CONFIG_TMPL,
+        'monitoring/alert_rules.yml':      PROMETHEUS_ALERT_RULES_TMPL,
+    },
+    'grafana': {
+        'monitoring/grafana/datasource.yml':  GRAFANA_DATASOURCE_TMPL,
+        'monitoring/grafana/dashboard.json':  GRAFANA_DASHBOARD_TMPL,
+    },
+    # Legacy aliases — keep for backwards compatibility
+    'terraform': {
+        'terraform/aws/main.tf':      AWS_MAIN_TF_TMPL,
+        'terraform/aws/variables.tf': AWS_VARIABLES_TF_TMPL,
+        'terraform/aws/outputs.tf':   AWS_OUTPUTS_TF_TMPL,
+    },
+    'github_actions': {
+        '.github/workflows/deploy.yml': """\
+name: CI/CD Pipeline
+on:
+  push:
+    branches: ["{{ branch | default('main') }}"]
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image
+        run: docker build -t {{ image_name | default('app') }}:${{ '{{' }} github.sha {{ '}}' }} .
+      - name: Run tests
+        run: {{ test_command | default('echo No tests configured') }}
+""",
+    },
+}
+
+
+def generate_pipeline(tool_type: str, config_data: dict) -> dict:
+    """
+    Render all config files for a given tool_type.
+    Returns { filename: rendered_string }.
+    Errors per-file are caught and returned as inline comments.
+    """
+    tmpl_map = TEMPLATE_MAP.get(tool_type, {})
+    result = {}
+    for filename, tmpl_str in tmpl_map.items():
+        try:
+            result[filename] = env.from_string(tmpl_str).render(**config_data)
+        except Exception as e:
+            result[filename] = f"# Template render error: {e}\n# config_data: {config_data}"
+    return result

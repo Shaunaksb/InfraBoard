@@ -12,6 +12,13 @@ class Template(models.Model):
     tags = models.JSONField(default=list, blank=True)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='templates')
 
+    # Tool-specific config: links a template to a tool_type and defines the config input schema
+    tool_type = models.CharField(max_length=50, blank=True, default='')
+    config_fields = models.JSONField(default=list, blank=True)
+    # Each entry shape:
+    # { "id": str, "label": str, "type": "text"|"number"|"select"|"checkbox",
+    #   "placeholder": str, "options": [str], "required": bool }
+
     def save(self, *args, **kwargs):
         if not self.id or not str(self.id).startswith('tpl_'):
             self.id = f"tpl_{uuid.uuid4().hex[:8]}"

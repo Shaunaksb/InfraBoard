@@ -172,7 +172,7 @@ const BoardSetup = ({ onCreateBoard }: BoardSetupProps) => {
           Configure your board
         </h2>
         <p className="mt-1 mb-8 text-muted-foreground">
-          Customize columns, fields, and tags for your cards
+          Define the columns for your board and select the DevOps tools you want to include
         </p>
 
         {/* Board Name */}
@@ -210,116 +210,18 @@ const BoardSetup = ({ onCreateBoard }: BoardSetupProps) => {
           </div>
         </div>
 
-        {/* Fields */}
         <div className="mb-8">
-          <div className="mb-3 flex items-center justify-between">
-            <Label className="text-sm font-medium text-foreground">Card Fields</Label>
-            <Button variant="ghost" size="sm" onClick={addField} className="h-7 gap-1 text-xs text-primary">
-              <Plus className="h-3.5 w-3.5" /> Add
-            </Button>
-          </div>
-          <div className="space-y-3">
-            {fields.map((field, i) => (
-              <div key={field.id} className="rounded-lg border border-border bg-card p-3">
-                <div className="flex items-start gap-2">
-                  <div className="flex-1 space-y-2">
-                    <div className="flex gap-2">
-                      <Input
-                        value={field.name}
-                        onChange={(e) => updateField(i, { name: e.target.value })}
-                        placeholder="Field name"
-                        className="flex-1"
-                      />
-                      <Select
-                        value={field.type}
-                        onValueChange={(v) => updateField(i, { type: v as FieldType, options: v === "select" ? ["Option 1"] : undefined })}
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="text">Text</SelectItem>
-                          <SelectItem value="textarea">Textarea</SelectItem>
-                          <SelectItem value="number">Number</SelectItem>
-                          <SelectItem value="date">Date</SelectItem>
-                          <SelectItem value="select">Select</SelectItem>
-                          <SelectItem value="url">URL</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    {field.type === "select" && (
-                      <div className="pl-1">
-                        <p className="mb-1 text-xs text-muted-foreground">Options (comma-separated)</p>
-                        <Input
-                          value={field.options?.join(", ") || ""}
-                          onChange={(e) => updateField(i, { options: e.target.value.split(",").map((s) => s.trim()).filter(Boolean) })}
-                          placeholder="Option 1, Option 2, ..."
-                          className="text-sm"
-                        />
-                      </div>
-                    )}
-                  </div>
-                  <Button variant="ghost" size="icon" onClick={() => removeField(i)} className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-            {fields.length === 0 && (
-              <p className="text-center text-sm text-muted-foreground py-4">No fields yet. Add fields to capture card details.</p>
-            )}
-          </div>
-        </div>
-
-        {/* Tags */}
-        <div className="mb-10">
-          <div className="mb-3 flex items-center justify-between">
-            <Label className="text-sm font-medium text-foreground">Tags</Label>
-            <Button variant="ghost" size="sm" onClick={addTag} className="h-7 gap-1 text-xs text-primary">
-              <Plus className="h-3.5 w-3.5" /> Add
-            </Button>
-          </div>
+          <Label className="text-sm font-medium text-foreground">Available Tools</Label>
+          <p className="text-xs text-muted-foreground mb-3">Click to add a column configured for a specific tool.</p>
           <div className="flex flex-wrap gap-2">
-            {tags.map((tag, i) => (
-              <div
-                key={tag.id}
-                className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5"
-              >
-                <Select
-                  value={tag.color}
-                  onValueChange={(v) => updateTag(i, { color: v })}
-                >
-                  <SelectTrigger 
-                    className="h-5 w-5 cursor-pointer appearance-none rounded-full border-0 p-0 [&>svg]:hidden ring-0 focus:ring-0 shadow-none focus-visible:ring-0"
-                    style={{ backgroundColor: `hsl(${tag.color})` }}
-                  >
-                    <SelectValue asChild><div /></SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TAG_COLORS.map((c) => (
-                      <SelectItem key={c.value} value={c.value}>
-                        <div className="flex items-center gap-2">
-                          <div className="h-3 w-3 rounded-full" style={{ backgroundColor: `hsl(${c.value})` }} />
-                          {c.name}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Input
-                  value={tag.name}
-                  onChange={(e) => updateTag(i, { name: e.target.value })}
-                  placeholder="Tag name"
-                  className="h-6 w-24 border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
-                />
-                <Button variant="ghost" size="icon" onClick={() => removeTag(i)} className="h-6 w-6 text-muted-foreground hover:bg-transparent hover:text-destructive">
-                  <X className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            ))}
-            {tags.length === 0 && (
-              <p className="text-sm text-muted-foreground py-2">No tags yet. Add tags to categorize cards.</p>
-            )}
+            <Button variant="outline" size="sm" onClick={() => setColumns([...columns, "Docker"])} className="text-xs h-8">Add Docker</Button>
+            <Button variant="outline" size="sm" onClick={() => setColumns([...columns, "Kubernetes"])} className="text-xs h-8">Add Kubernetes</Button>
+            <Button variant="outline" size="sm" onClick={() => setColumns([...columns, "AWS"])} className="text-xs h-8">Add AWS</Button>
+            <Button variant="outline" size="sm" onClick={() => setColumns([...columns, "GCP"])} className="text-xs h-8">Add GCP</Button>
+            <Button variant="outline" size="sm" onClick={() => setColumns([...columns, "Terraform"])} className="text-xs h-8">Add Terraform</Button>
+            <Button variant="outline" size="sm" onClick={() => setColumns([...columns, "GitHub Actions"])} className="text-xs h-8">Add GitHub Actions</Button>
+            <Button variant="outline" size="sm" onClick={() => setColumns([...columns, "Prometheus"])} className="text-xs h-8">Add Prometheus</Button>
+            <Button variant="outline" size="sm" onClick={() => setColumns([...columns, "Grafana"])} className="text-xs h-8">Add Grafana</Button>
           </div>
         </div>
 

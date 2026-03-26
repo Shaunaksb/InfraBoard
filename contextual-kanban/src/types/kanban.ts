@@ -37,6 +37,15 @@ export interface TagConfig {
   color: string; // HSL CSS variable name like "primary" or custom
 }
 
+export interface ConfigFieldSchema {
+  id: string;
+  label: string;
+  type: 'text' | 'number' | 'select' | 'checkbox';
+  placeholder?: string;
+  options?: string[];
+  required?: boolean;
+}
+
 export interface BoardTemplate {
   id: string;
   name: string;
@@ -45,6 +54,8 @@ export interface BoardTemplate {
   columns: string[];
   fields: FieldConfig[];
   tags: TagConfig[];
+  tool_type?: string;
+  config_fields?: ConfigFieldSchema[];
 }
 
 export interface BoardConfig {
@@ -78,10 +89,12 @@ export interface KanbanCard {
   createdAt: string;
 }
 
+export type ToolType = 'none' | 'docker' | 'kubernetes' | 'terraform' | 'github_actions' | 'aws' | 'gcp' | 'prometheus' | 'grafana';
+
 export interface KanbanColumn {
   id: string;
   title: string;
-  tool_type?: string;
+  tool_type?: ToolType;
   cards: KanbanCard[];
 }
 

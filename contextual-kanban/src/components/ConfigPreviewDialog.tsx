@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, Copy, Pencil, Check } from "lucide-react";
 import { toast } from "sonner";
+
+import { Textarea } from "@/components/ui/textarea";
 
 interface ConfigPreviewDialogProps {
   open: boolean;
@@ -16,6 +18,7 @@ export default function ConfigPreviewDialog({ open, onClose, selectedCards, boar
   const [pipelineData, setPipelineData] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("");
+  const [editingMode, setEditingMode] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (open && Object.keys(selectedCards).length > 0) {
@@ -115,12 +118,45 @@ export default function ConfigPreviewDialog({ open, onClose, selectedCards, boar
                   </TabsTrigger>
                 ))}
               </TabsList>
-              <div className="flex-1 overflow-y-auto mt-2 rounded-md bg-muted/50 p-4 kanban-scrollbar outline-none border border-border">
+              <div className="flex-1 overflow-hidden mt-2 relative border border-border rounded-md flex flex-col">
                 {files.map(file => (
-                  <TabsContent key={file} value={file} className="m-0 h-full outline-none">
-                    <pre className="text-sm font-mono whitespace-pre-wrap break-all text-foreground">
-                      <code>{pipelineData[file]}</code>
-                    </pre>
+                  <TabsContent key={file} value={file} className="m-0 flex-1 w-full outline-none data-[state=active]:flex flex-col relative group">
+                    <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        className="h-8 gap-1.5 text-xs shadow-sm bg-background/90 hover:bg-background"
+                        onClick={() => setEditingMode(prev => ({ ...prev, [file]: !prev[file] }))}
+                      >
+                        {editingMode[file] ? <><Check className="h-3.5 w-3.5 text-green-500" /> Done</> : <><Pencil className="h-3.5 w-3.5" /> Edit</>}
+                      </Button>
+                      <Button 
+                        variant="secondary" 
+                        size="icon" 
+                        className="h-8 w-8 shadow-sm bg-background/90 hover:bg-background"
+                        onClick={() => {
+                          navigator.clipboard.writeText(pipelineData[file]);
+                          toast.success("Copied to clipboard");
+                        }}
+                        title="Copy to clipboard"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                    
+                    {editingMode[file] ? (
+                      <Textarea 
+                        value={pipelineData[file]}
+                        onChange={(e) => setPipelineData(prev => ({ ...prev, [file]: e.target.value }))}
+                        className="flex-1 w-full resize-none border-0 font-mono text-sm whitespace-pre focus-visible:ring-0 rounded-none bg-muted/30 p-4 kanban-scrollbar text-foreground"
+                        spellCheck={false}
+                        autoFocus
+                      />
+                    ) : (
+                      <pre className="flex-1 w-full overflow-y-auto m-0 p-4 text-sm font-mono whitespace-pre-wrap break-all bg-muted/10 text-foreground kanban-scrollbar">
+                        <code>{pipelineData[file]}</code>
+                      </pre>
+                    )}
                   </TabsContent>
                 ))}
               </div>

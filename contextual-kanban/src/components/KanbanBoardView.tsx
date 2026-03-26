@@ -42,7 +42,7 @@ const KanbanBoardView = ({ board, onBoardChange }: KanbanBoardViewProps) => {
     board.config.focusColumns || board.columns.map((c) => c.id)
   );
   const sidebar = useSidebar();
-  const { addTemplate } = useTemplates();
+  const { templates, addTemplate } = useTemplates();
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
   const [selectedCards, setSelectedCards] = useState<Record<string, string>>({});
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
@@ -309,6 +309,7 @@ const KanbanBoardView = ({ board, onBoardChange }: KanbanBoardViewProps) => {
                 column={column}
                 config={board.config}
                 allCards={allCards}
+                templates={templates}
                 selectedCardId={selectedCards[column.id]}
                 onSelectCard={(cardId) => handleSelectCard(column.id, cardId)}
                 onAddCard={addCard}

@@ -4,4 +4,9 @@ from api.models import Template
 class TemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Template
-        fields = ['id', 'name', 'description', 'icon', 'columns', 'fields', 'tags']
+        fields = [
+            'id', 'name', 'description', 'icon',
+            'columns', 'fields', 'tags',
+            'tool_type',
+            'config_fields',
+        ]

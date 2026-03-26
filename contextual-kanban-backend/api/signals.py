@@ -22,5 +22,7 @@ def seed_default_templates(sender, instance, created, **kwargs):
             columns=tpl_data["columns"],
             fields=tpl_data["fields"],
             tags=tpl_data["tags"],
+            tool_type=tpl_data.get("tool_type", ""),
+            config_fields=tpl_data.get("config_fields", []),
             owner=instance,
         )

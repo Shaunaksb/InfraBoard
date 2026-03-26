@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo } from "react";
-import { KanbanCard, BoardConfig, FieldConfig, FileAttachment } from "@/types/kanban";
+import { KanbanCard, BoardConfig, FieldConfig, FileAttachment, ConfigFieldSchema } from "@/types/kanban";
 import { calculateSimilarity } from "@/utils/fuzzySearch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +29,7 @@ interface CardDialogProps {
   columnId: string;
   editCard?: KanbanCard | null;
   allCards: KanbanCard[];
-  toolType?: string;
+  configFields?: ConfigFieldSchema[];
 }
 
 const formatBytes = (bytes: number) => {
@@ -44,7 +44,7 @@ const formatTime = (seconds: number) => {
   return `${m}:${s.toString().padStart(2, "0")}`;
 };
 
-const CardDialog = ({ open, onClose, onSave, onDelete, config, columnId, editCard, allCards, toolType }: CardDialogProps) => {
+const CardDialog = ({ open, onClose, onSave, onDelete, config, columnId, editCard, allCards, configFields = [] }: CardDialogProps) => {
   const [title, setTitle] = useState(editCard?.title || "");
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(editCard?.fields || {});
   const [configData, setConfigData] = useState<Record<string, any>>(editCard?.config_data || {});
@@ -186,45 +186,60 @@ const CardDialog = ({ open, onClose, onSave, onDelete, config, columnId, editCar
             </div>
           ))}
 
-          {toolType === 'docker' && (
+          {/* Dynamic DevOps Config Section — driven entirely by backend template */}
+          {configFields.length > 0 && (
             <div className="space-y-3 rounded-md border border-border p-3 bg-card mt-4">
-              <h4 className="text-sm font-semibold text-primary">Docker Configuration</h4>
-              <div>
-                <Label className="text-xs">Base Image</Label>
-                <Input value={configData.base_image || ""} onChange={(e) => setConfigData({...configData, base_image: e.target.value})} placeholder="python:3.9-slim" className="mt-1 h-8 text-xs" />
-              </div>
-              <div>
-                <Label className="text-xs">Run Commands</Label>
-                <Input value={configData.run_commands || ""} onChange={(e) => setConfigData({...configData, run_commands: e.target.value})} placeholder="apt-get update && apt-get install -y curl" className="mt-1 h-8 text-xs" />
-              </div>
-              <div>
-                <Label className="text-xs">Expose Port</Label>
-                <Input value={configData.expose_port || ""} onChange={(e) => setConfigData({...configData, expose_port: e.target.value})} placeholder="8000" className="mt-1 h-8 text-xs" />
-              </div>
-            </div>
-          )}
+              <h4 className="text-sm font-semibold text-primary">Tool Configuration</h4>
+              {configFields.map((field) => (
+                <div key={field.id}>
+                  <Label className="text-xs">{field.label}</Label>
 
-          {toolType === 'terraform' && (
-            <div className="space-y-3 rounded-md border border-border p-3 bg-card mt-4">
-              <h4 className="text-sm font-semibold text-primary">Terraform Configuration</h4>
-              <div>
-                <Label className="text-xs">Provider</Label>
-                <Input value={configData.provider || ""} onChange={(e) => setConfigData({...configData, provider: e.target.value})} placeholder="aws" className="mt-1 h-8 text-xs" />
-              </div>
-              <div>
-                <Label className="text-xs">Instance Type</Label>
-                <Input value={configData.instance_type || ""} onChange={(e) => setConfigData({...configData, instance_type: e.target.value})} placeholder="t2.micro" className="mt-1 h-8 text-xs" />
-              </div>
-            </div>
-          )}
+                  {field.type === 'select' ? (
+                    <Select
+                      value={configData[field.id] || ''}
+                      onValueChange={(val) =>
+                        setConfigData((prev) => ({ ...prev, [field.id]: val }))
+                      }
+                    >
+                      <SelectTrigger className="mt-1 h-8 text-xs">
+                        <SelectValue placeholder={field.placeholder || `Select ${field.label}`} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(field.options ?? []).map((opt) => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
 
-          {toolType === 'github_actions' && (
-            <div className="space-y-3 rounded-md border border-border p-3 bg-card mt-4">
-              <h4 className="text-sm font-semibold text-primary">GitHub Actions Configuration</h4>
-              <div>
-                <Label className="text-xs">Branch</Label>
-                <Input value={configData.branch || ""} onChange={(e) => setConfigData({...configData, branch: e.target.value})} placeholder="main" className="mt-1 h-8 text-xs" />
-              </div>
+                  ) : field.type === 'checkbox' ? (
+                    <div className="flex items-center gap-2 mt-1">
+                      <input
+                        type="checkbox"
+                        id={`cfg-${field.id}`}
+                        checked={!!configData[field.id]}
+                        onChange={(e) =>
+                          setConfigData((prev) => ({ ...prev, [field.id]: e.target.checked }))
+                        }
+                        className="h-4 w-4"
+                      />
+                      <Label htmlFor={`cfg-${field.id}`} className="text-xs font-normal">
+                        {field.label}
+                      </Label>
+                    </div>
+
+                  ) : (
+                    <Input
+                      type={field.type}
+                      placeholder={field.placeholder}
+                      value={configData[field.id] || ''}
+                      onChange={(e) =>
+                        setConfigData((prev) => ({ ...prev, [field.id]: e.target.value }))
+                      }
+                      className="mt-1 h-8 text-xs"
+                    />
+                  )}
+                </div>
+              ))}
             </div>
           )}
 
