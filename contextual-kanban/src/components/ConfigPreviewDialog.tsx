@@ -95,7 +95,7 @@ export default function ConfigPreviewDialog({ open, onClose, selectedCards, boar
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col overflow-hidden">
+      <DialogContent className="max-w-5xl w-[90vw] max-h-[90vh] flex flex-col overflow-hidden bg-background border-border shadow-2xl">
         <DialogHeader>
           <DialogTitle>Pipeline Preview</DialogTitle>
         </DialogHeader>
@@ -107,33 +107,33 @@ export default function ConfigPreviewDialog({ open, onClose, selectedCards, boar
             </div>
           ) : files.length > 0 ? (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-              <TabsList className="w-full justify-start overflow-x-auto rounded-none border-b bg-transparent p-0">
+              <TabsList className="w-full justify-start overflow-x-auto rounded-none border-b bg-muted/20 p-0 kanban-scrollbar h-auto min-h-10">
                 {files.map(file => (
                   <TabsTrigger
                     key={file}
                     value={file}
-                    className="relative h-9 rounded-none border-b-2 border-transparent bg-transparent px-4 pb-3 pt-2 font-medium text-muted-foreground shadow-none transition-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
+                    className="relative flex-shrink-0 h-10 rounded-none border-b-2 border-transparent bg-transparent px-4 pb-2 pt-2 text-sm font-medium text-muted-foreground shadow-none transition-all duration-200 data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-background/50"
                   >
                     {file}
                   </TabsTrigger>
                 ))}
               </TabsList>
-              <div className="flex-1 overflow-hidden mt-2 relative border border-border rounded-md flex flex-col">
+              <div className="flex-1 overflow-hidden mt-4 relative border border-border rounded-lg flex flex-col bg-zinc-950/50">
                 {files.map(file => (
                   <TabsContent key={file} value={file} className="m-0 flex-1 w-full outline-none data-[state=active]:flex flex-col relative group">
-                    <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                    <div className="absolute top-4 right-6 z-10 flex items-center gap-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100 focus-within:opacity-100">
                       <Button 
                         variant="secondary" 
                         size="sm" 
-                        className="h-8 gap-1.5 text-xs shadow-sm bg-background/90 hover:bg-background"
+                        className="h-8 gap-2 text-xs shadow-md bg-zinc-900/90 border border-white/10 text-white hover:bg-zinc-800"
                         onClick={() => setEditingMode(prev => ({ ...prev, [file]: !prev[file] }))}
                       >
-                        {editingMode[file] ? <><Check className="h-3.5 w-3.5 text-green-500" /> Done</> : <><Pencil className="h-3.5 w-3.5" /> Edit</>}
+                        {editingMode[file] ? <><Check className="h-3.5 w-3.5 text-emerald-400" /> Done</> : <><Pencil className="h-3.5 w-3.5" /> Edit</>}
                       </Button>
                       <Button 
                         variant="secondary" 
                         size="icon" 
-                        className="h-8 w-8 shadow-sm bg-background/90 hover:bg-background"
+                        className="h-8 w-8 shadow-md bg-zinc-900/90 border border-white/10 text-white hover:bg-zinc-800"
                         onClick={() => {
                           navigator.clipboard.writeText(pipelineData[file]);
                           toast.success("Copied to clipboard");
@@ -148,13 +148,13 @@ export default function ConfigPreviewDialog({ open, onClose, selectedCards, boar
                       <Textarea 
                         value={pipelineData[file]}
                         onChange={(e) => setPipelineData(prev => ({ ...prev, [file]: e.target.value }))}
-                        className="flex-1 w-full resize-none border-0 font-mono text-sm whitespace-pre focus-visible:ring-0 rounded-none bg-muted/30 p-4 kanban-scrollbar text-foreground"
+                        className="flex-1 w-full resize-none border-0 font-mono text-sm whitespace-pre focus-visible:ring-0 rounded-none bg-transparent p-6 kanban-scrollbar text-zinc-300 selection:bg-primary/30"
                         spellCheck={false}
                         autoFocus
                       />
                     ) : (
-                      <pre className="flex-1 w-full overflow-y-auto m-0 p-4 text-sm font-mono whitespace-pre-wrap break-all bg-muted/10 text-foreground kanban-scrollbar">
-                        <code>{pipelineData[file]}</code>
+                      <pre className="flex-1 w-full overflow-y-auto m-0 p-6 text-sm font-mono whitespace-pre text-zinc-300 kanban-scrollbar selection:bg-primary/30">
+                        <code className="block min-w-full">{pipelineData[file]}</code>
                       </pre>
                     )}
                   </TabsContent>
