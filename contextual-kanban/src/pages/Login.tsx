@@ -52,8 +52,11 @@ const Login = () => {
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
             <Card className="w-full max-w-sm">
                 <CardHeader className="space-y-1">
-                    <CardTitle className="text-2xl font-bold tracking-tight">Login</CardTitle>
-                    <CardDescription>
+                    <div className="flex flex-col items-center justify-center mb-4 space-y-2">
+                        <img src="/infraboard.png" alt="InfraBoard Logo" className="h-12 w-auto" />
+                        <CardTitle className="text-2xl font-bold tracking-tight">Login to InfraBoard</CardTitle>
+                    </div>
+                    <CardDescription className="text-center">
                         Enter your credentials below to login to your account
                     </CardDescription>
                 </CardHeader>

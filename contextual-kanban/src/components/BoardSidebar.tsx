@@ -51,10 +51,15 @@ const BoardSidebar = ({ boards, activeBoardId, onSelectBoard, onNewBoard, onDele
     <Sidebar collapsible="icon">
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="flex items-center justify-between">
+          <SidebarGroupLabel className="flex items-center justify-between h-10">
             <div className="flex items-center gap-2">
               <SidebarTrigger className="h-6 w-6" />
-              {!collapsed && <span>Boards</span>}
+              {!collapsed && (
+                <div className="flex items-center gap-2">
+                  <img src="/infraboard.png" alt="InfraBoard" className="h-5 w-auto" />
+                  <span className="font-semibold text-foreground text-sm">InfraBoard</span>
+                </div>
+              )}
             </div>
             <Button variant="ghost" size="icon" className="h-5 w-5" onClick={onNewBoard}>
               <Plus className="h-3.5 w-3.5" />
