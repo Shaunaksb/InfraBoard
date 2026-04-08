@@ -663,6 +663,90 @@ output "kubeconfig_command" {
 }
 """
 
+
+# ─────────────────────────────────────────────────────────────
+# AZURE (Terraform)
+# ─────────────────────────────────────────────────────────────
+
+AZURE_MAIN_TF_TMPL = """\
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "~> 3.0"
+    }
+  }
+}
+
+provider "azurerm" {
+  features {}
+}
+
+resource "azurerm_resource_group" "main" {
+  name     = var.resource_group
+  location = var.location
+}
+
+resource "azurerm_kubernetes_cluster" "main" {
+  name                = var.app_name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  dns_prefix          = var.app_name
+
+  default_node_pool {
+    name       = "default"
+    node_count = 2
+    vm_size    = "{{ vm_size | default('Standard_DS2_v2') }}"
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  tags = {
+    Environment = var.environment
+  }
+}
+"""
+
+AZURE_VARIABLES_TF_TMPL = """\
+variable "app_name" {
+  description = "Name of the application"
+  type        = string
+  default     = "{{ app_name | default('my-app') }}"
+}
+
+variable "resource_group" {
+  description = "Azure Resource Group"
+  type        = string
+  default     = "{{ resource_group | default('rg-myapp') }}"
+}
+
+variable "location" {
+  description = "Azure Region"
+  type        = string
+  default     = "{{ location | default('eastus') }}"
+}
+
+variable "environment" {
+  description = "Deployment environment"
+  type        = string
+  default     = "{{ environment | default('dev') }}"
+}
+"""
+
+AZURE_OUTPUTS_TF_TMPL = """\
+output "client_certificate" {
+  value     = azurerm_kubernetes_cluster.main.kube_config.0.client_certificate
+  sensitive = true
+}
+
+output "kube_config" {
+  value     = azurerm_kubernetes_cluster.main.kube_config_raw
+  sensitive = true
+}
+"""
+
 # ─────────────────────────────────────────────────────────────
 # PROMETHEUS
 # ─────────────────────────────────────────────────────────────
@@ -851,6 +935,11 @@ TEMPLATE_MAP = {
         'terraform/gcp/variables.tf': GCP_VARIABLES_TF_TMPL,
         'terraform/gcp/outputs.tf':   GCP_OUTPUTS_TF_TMPL,
     },
+    'azure': {
+        'terraform/azure/main.tf':      AZURE_MAIN_TF_TMPL,
+        'terraform/azure/variables.tf': AZURE_VARIABLES_TF_TMPL,
+        'terraform/azure/outputs.tf':   AZURE_OUTPUTS_TF_TMPL,
+    },
     'prometheus': {
         'monitoring/prometheus.yml':       PROMETHEUS_CONFIG_TMPL,
         'monitoring/alert_rules.yml':      PROMETHEUS_ALERT_RULES_TMPL,
@@ -871,15 +960,67 @@ name: CI/CD Pipeline
 on:
   push:
     branches: ["{{ branch | default('main') }}"]
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Build Docker image
         run: docker build -t {{ image_name | default('app') }}:${{ '{{' }} github.sha {{ '}}' }} .
+
       - name: Run tests
         run: {{ test_command | default('echo No tests configured') }}
+
+      {% if enable_terraform | default(false) %}
+      # ── Terraform Lifecycle ────────────────────────────────
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: {{ terraform_version | default('1.7.0') }}
+
+      {% set provider = cloud_provider | default('None') %}
+      {% if provider == 'AWS' %}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ '{{' }} secrets.AWS_ACCESS_KEY_ID {{ '}}' }}
+          aws-secret-access-key: ${{ '{{' }} secrets.AWS_SECRET_ACCESS_KEY {{ '}}' }}
+          aws-region: {{ region | default('us-east-1') }}
+      {% elif provider == 'GCP' %}
+      - name: Auth to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ '{{' }} secrets.GCP_SA_KEY {{ '}}' }}
+      {% elif provider == 'Azure' %}
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ '{{' }} secrets.AZURE_CREDENTIALS {{ '}}' }}
+      {% endif %}
+
+      {% set target_dir = terraform_dir | default('') %}
+      {% if not target_dir %}
+        {% if provider == 'AWS' %}{% set target_dir = 'terraform/aws' %}
+        {% elif provider == 'GCP' %}{% set target_dir = 'terraform/gcp' %}
+        {% elif provider == 'Azure' %}{% set target_dir = 'terraform/azure' %}
+        {% else %}{% set target_dir = 'terraform' %}
+        {% endif %}
+      {% endif %}
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: {{ target_dir }}
+
+      - name: Terraform Plan
+        run: terraform plan
+        working-directory: {{ target_dir }}
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        working-directory: {{ target_dir }}
+      {% endif %}
 """,
     },
 }
