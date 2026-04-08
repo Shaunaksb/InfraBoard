@@ -15,79 +15,7 @@ _BASE_IMAGE_OPTIONS = [tag for tag in BASE_IMAGES]
 
 
 DEFAULT_TEMPLATES = [
-    # ── Existing board templates (unchanged structure, new keys added) ──────
-    {
-        "name": "Containerized Web App",
-        "description": "Standard Docker image built and deployed via CI/CD",
-        "icon": "Box",
-        "columns": ["Docker Build", "Terraform Infra", "GitHub Actions Deploy"],
-        "fields": [
-            {"id": "environment", "name": "Environment", "type": "select",
-             "required": True, "options": ["Production", "Staging", "Development"],
-             "placeholder": "Select environment"},
-            {"id": "owner", "name": "Owner", "type": "text",
-             "required": False, "placeholder": "Responsible team"},
-        ],
-        "tags": [
-            {"id": "frontend", "name": "Frontend", "color": "hsl(210, 80%, 60%)"},
-            {"id": "backend", "name": "Backend", "color": "hsl(150, 70%, 50%)"},
-        ],
-        "tool_type": "",
-        "config_fields": [],
-    },
-    {
-        "name": "Serverless Infrastructure",
-        "description": "Provision and deploy cloud-native serverless components",
-        "icon": "Cloud",
-        "columns": ["Terraform Base", "GitHub Actions CI", "Terraform App"],
-        "fields": [
-            {"id": "region", "name": "Cloud Region", "type": "text",
-             "required": True, "placeholder": "us-east-1"},
-            {"id": "runtime", "name": "Runtime", "type": "select",
-             "required": False, "options": ["Node.js", "Python", "Go"],
-             "placeholder": "Select runtime"},
-        ],
-        "tags": [
-            {"id": "api", "name": "API Gateway", "color": "hsl(45, 90%, 55%)"},
-            {"id": "db", "name": "Database", "color": "hsl(280, 60%, 60%)"},
-        ],
-        "tool_type": "",
-        "config_fields": [],
-    },
-    {
-        "name": "Custom Integration Pipeline",
-        "description": "Configure your own deployment workflows from scratch",
-        "icon": "Wrench",
-        "columns": ["Setup", "Docker Container", "GitHub Actions"],
-        "fields": [
-            {"id": "trigger", "name": "Trigger Event", "type": "select",
-             "required": False, "options": ["Push", "PR", "Manual"],
-             "placeholder": "Trigger"},
-        ],
-        "tags": [
-            {"id": "experimental", "name": "Experimental", "color": "hsl(0, 80%, 60%)"},
-        ],
-        "tool_type": "",
-        "config_fields": [],
-    },
-    {
-        "name": "Kubernetes Full Stack",
-        "description": "Docker build → K8s deploy with Prometheus & Grafana monitoring",
-        "icon": "Container",
-        "columns": ["Docker Build", "Kubernetes Deploy", "Prometheus Alerts", "Grafana Dashboard"],
-        "fields": [
-            {"id": "app_name", "name": "App Name", "type": "text", "required": True, "placeholder": "my-app"},
-            {"id": "environment", "name": "Environment", "type": "select", "required": True,
-             "options": ["dev", "staging", "production"], "placeholder": "Select environment"},
-            {"id": "namespace", "name": "K8s Namespace", "type": "text", "required": False, "placeholder": "default"},
-        ],
-        "tags": [
-            {"id": "k8s", "name": "Kubernetes", "color": "hsl(210, 80%, 60%)"},
-            {"id": "monitoring", "name": "Monitoring", "color": "hsl(45, 90%, 55%)"},
-        ],
-        "tool_type": "",
-        "config_fields": [],
-    },
+    # ── Curated High-Quality Board Templates ──────
     {
         "name": "AWS Cloud Infrastructure",
         "description": "Provision EKS, IAM, and S3 on AWS with Terraform",
@@ -129,8 +57,85 @@ DEFAULT_TEMPLATES = [
         "tool_type": "",
         "config_fields": [],
     },
+    {
+        "name": "Azure Cloud Infrastructure",
+        "description": "Provision AKS, Resource Groups, and Storage on Azure with Terraform",
+        "icon": "Cloud",
+        "columns": ["Azure Terraform", "Kubernetes Deploy", "GitHub Actions CI"],
+        "fields": [
+            {"id": "app_name", "name": "App Name", "type": "text", "required": True, "placeholder": "my-azure-app"},
+            {"id": "resource_group", "name": "Resource Group", "type": "text", "required": True, "placeholder": "rg-myapp"},
+            {"id": "location", "name": "Location", "type": "text", "required": True, "placeholder": "eastus"},
+            {"id": "vm_size", "name": "VM Size", "type": "select", "required": False,
+             "options": ["Standard_DS2_v2", "Standard_DS3_v2", "Standard_D2s_v3"], "placeholder": "Standard_DS2_v2"},
+            {"id": "environment", "name": "Environment", "type": "select", "required": True,
+             "options": ["dev", "staging", "production"]},
+        ],
+        "tags": [
+            {"id": "azure", "name": "Azure", "color": "hsl(200, 90%, 50%)"},
+            {"id": "iac", "name": "IaC", "color": "hsl(150, 70%, 50%)"},
+        ],
+        "tool_type": "",
+        "config_fields": [],
+    },
+    {
+        "name": "Containerized Web App",
+        "description": "Standard Docker image built and deployed via CI/CD",
+        "icon": "Box",
+        "columns": ["Docker Build", "Terraform Infra", "GitHub Actions Deploy"],
+        "fields": [
+            {"id": "environment", "name": "Environment", "type": "select",
+             "required": True, "options": ["Production", "Staging", "Development"],
+             "placeholder": "Select environment"},
+            {"id": "owner", "name": "Owner", "type": "text",
+             "required": False, "placeholder": "Responsible team"},
+        ],
+        "tags": [
+            {"id": "frontend", "name": "Frontend", "color": "hsl(210, 80%, 60%)"},
+            {"id": "backend", "name": "Backend", "color": "hsl(150, 70%, 50%)"},
+        ],
+        "tool_type": "",
+        "config_fields": [],
+    },
+    {
+        "name": "Serverless Infrastructure",
+        "description": "Provision and deploy cloud-native serverless components",
+        "icon": "Cloud",
+        "columns": ["Terraform Base", "GitHub Actions CI", "Terraform App"],
+        "fields": [
+            {"id": "region", "name": "Cloud Region", "type": "text",
+             "required": True, "placeholder": "us-east-1"},
+            {"id": "runtime", "name": "Runtime", "type": "select",
+             "required": False, "options": ["Node.js", "Python", "Go"],
+             "placeholder": "Select runtime"},
+        ],
+        "tags": [
+            {"id": "api", "name": "API Gateway", "color": "hsl(45, 90%, 55%)"},
+            {"id": "db", "name": "Database", "color": "hsl(280, 60%, 60%)"},
+        ],
+        "tool_type": "",
+        "config_fields": [],
+    },
+    {
+        "name": "Kubernetes Full Stack",
+        "description": "Docker build → K8s deploy with Prometheus & Grafana monitoring",
+        "icon": "Container",
+        "columns": ["Docker Build", "Kubernetes Deploy", "Prometheus Alerts", "Grafana Dashboard"],
+        "fields": [
+            {"id": "app_name", "name": "App Name", "type": "text", "required": True, "placeholder": "my-app"},
+            {"id": "environment", "name": "Environment", "type": "select", "required": True,
+             "options": ["dev", "staging", "production"], "placeholder": "Select environment"},
+            {"id": "namespace", "name": "K8s Namespace", "type": "text", "required": False, "placeholder": "default"},
+        ],
+        "tags": [
+            {"id": "k8s", "name": "Kubernetes", "color": "hsl(210, 80%, 60%)"},
+            {"id": "monitoring", "name": "Monitoring", "color": "hsl(45, 90%, 55%)"},
+        ],
+        "tool_type": "",
+        "config_fields": [],
+    },
 
-    # ── Tool-specific templates (tool_type set, config_fields populated) ────
+    # ── Tool-specific templates (Hidden from board creation, used for card config) ────
     {
         "name": "Docker",
         "description": "Build and run containerized applications",

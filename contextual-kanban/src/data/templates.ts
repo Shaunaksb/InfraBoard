@@ -13,10 +13,63 @@ export const TAG_COLORS = [
 
 export const BOARD_TEMPLATES: BoardTemplate[] = [
   {
+    id: "aws-infra",
+    name: "AWS Cloud Infrastructure",
+    description: "Provision EKS, IAM, and S3 on AWS with Terraform",
+    icon: "☁️",
+    columns: ["AWS Terraform", "Kubernetes Deploy", "GitHub Actions CI"],
+    fields: [
+      { id: "cluster_name", name: "Cluster Name", type: "text", placeholder: "prod-cluster" },
+      { id: "region", name: "AWS Region", type: "text", placeholder: "us-east-1" },
+      { id: "instance_type", name: "Instance Type", type: "select", options: ["t3.small", "t3.medium", "t3.large", "m5.xlarge"] },
+      { id: "environment", name: "Environment", type: "select", options: ["dev", "staging", "production"] },
+    ],
+    tags: [
+      { id: "aws", name: "AWS", color: "30 90% 55%" },
+      { id: "iac", name: "IaC", color: "150 70% 50%" },
+    ],
+  },
+  {
+    id: "gcp-infra",
+    name: "GCP Cloud Infrastructure",
+    description: "Provision GKE, Cloud SQL on GCP with Terraform",
+    icon: "☁️",
+    columns: ["GCP Terraform", "Kubernetes Deploy", "Prometheus Monitoring"],
+    fields: [
+      { id: "project_id", name: "GCP Project ID", type: "text", placeholder: "my-gcp-project" },
+      { id: "cluster_name", name: "Cluster Name", type: "text", placeholder: "prod-cluster" },
+      { id: "region", name: "GCP Region", type: "text", placeholder: "us-central1" },
+      { id: "machine_type", name: "Machine Type", type: "select", options: ["e2-small", "e2-standard-2", "e2-standard-4", "n1-standard-4"] },
+      { id: "environment", name: "Environment", type: "select", options: ["dev", "staging", "production"] },
+    ],
+    tags: [
+      { id: "gcp", name: "GCP", color: "210 70% 55%" },
+      { id: "iac", name: "IaC", color: "150 70% 50%" },
+    ],
+  },
+  {
+    id: "azure-infra",
+    name: "Azure Cloud Infrastructure",
+    description: "Provision AKS, Resource Groups, and Storage on Azure with Terraform",
+    icon: "☁️",
+    columns: ["Azure Terraform", "Kubernetes Deploy", "GitHub Actions CI"],
+    fields: [
+      { id: "app_name", name: "App Name", type: "text", placeholder: "my-azure-app" },
+      { id: "resource_group", name: "Resource Group", type: "text", placeholder: "rg-myapp" },
+      { id: "location", name: "Location", type: "text", placeholder: "eastus" },
+      { id: "vm_size", name: "VM Size", type: "select", options: ["Standard_DS2_v2", "Standard_DS3_v2", "Standard_D2s_v3"] },
+      { id: "environment", name: "Environment", type: "select", options: ["dev", "staging", "production"] },
+    ],
+    tags: [
+      { id: "azure", name: "Azure", color: "200 90% 50%" },
+      { id: "iac", name: "IaC", color: "150 70% 50%" },
+    ],
+  },
+  {
     id: "container-app",
     name: "Containerized Web App",
     description: "Standard Docker image built and deployed via CI/CD",
-    icon: "Box",
+    icon: "📦",
     columns: ["Docker Build", "Terraform Infra", "GitHub Actions Deploy"],
     fields: [
       { id: "environment", name: "Environment", type: "select", options: ["Production", "Staging", "Development"] },
@@ -31,7 +84,7 @@ export const BOARD_TEMPLATES: BoardTemplate[] = [
     id: "serverless",
     name: "Serverless Infrastructure",
     description: "Provision and deploy cloud-native serverless components",
-    icon: "Cloud",
+    icon: "⚡",
     columns: ["Terraform Base", "GitHub Actions CI", "Terraform App"],
     fields: [
       { id: "region", name: "Cloud Region", type: "text", placeholder: "us-east-1" },
@@ -43,12 +96,29 @@ export const BOARD_TEMPLATES: BoardTemplate[] = [
     ],
   },
   {
-    id: "custom",
-    name: "Custom Integration Pipeline",
-    description: "Configure your own deployment workflows from scratch",
-    icon: "Wrench",
-    columns: ["Setup", "Docker Container", "GitHub Actions"],
-    fields: [],
-    tags: [],
+    id: "k8s-full-stack",
+    name: "Kubernetes Full Stack",
+    description: "Docker build → K8s deploy with Prometheus & Grafana monitoring",
+    icon: "🏗️",
+    columns: ["Docker Build", "Kubernetes Deploy", "Prometheus Alerts", "Grafana Dashboard"],
+    fields: [
+      { id: "app_name", name: "App Name", type: "text", placeholder: "my-app" },
+      { id: "environment", name: "Environment", type: "select", options: ["dev", "staging", "production"] },
+      { id: "namespace", name: "K8s Namespace", type: "text", placeholder: "default" },
+    ],
+    tags: [
+      { id: "k8s", name: "Kubernetes", color: "210 80% 60%" },
+      { id: "monitoring", name: "Monitoring", color: "45 90% 55%" },
+    ],
   },
 ];
+
+export const EMPTY_BOARD_CONFIG = {
+  id: "custom",
+  name: "Custom Board",
+  description: "Start from scratch with your own configuration",
+  icon: "🛠️",
+  columns: [],
+  fields: [],
+  tags: [],
+};

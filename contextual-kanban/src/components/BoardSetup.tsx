@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { BoardConfig, BoardTemplate, FieldConfig, FieldType, TagConfig } from "@/types/kanban";
-import { TAG_COLORS } from "@/data/templates";
+import { TAG_COLORS, EMPTY_BOARD_CONFIG } from "@/data/templates";
 import { useTemplates } from "@/hooks/useTemplates";
 import { useUsers } from "@/hooks/useUsers";
 import { useOrganizations } from "@/hooks/useOrganizations";
@@ -127,27 +127,41 @@ const BoardSetup = ({ onCreateBoard }: BoardSetupProps) => {
               <div className="col-span-full py-10 text-center text-muted-foreground">
                 Loading templates...
               </div>
-            ) : templates.map((template) => (
-              <Button
-                variant="outline"
-                key={template.id}
-                onClick={() => selectTemplate(template)}
-                className="group relative block h-auto w-full p-6 text-left whitespace-normal rounded-lg border border-border bg-card transition-all duration-200 hover:border-primary/50 hover:shadow-card-hover hover:bg-card"
-              >
-                <span className="mb-3 block text-3xl">{template.icon || "📋"}</span>
-                <h3 className="text-lg font-semibold text-card-foreground hover:text-card-foreground">{template.name}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{template.description}</p>
-                {template.id !== "custom" && (
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {template.columns.map((col) => (
-                      <span key={col} className="rounded-md bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">
-                        {col}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </Button>
-            ))}
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => selectTemplate(EMPTY_BOARD_CONFIG as any)}
+                  className="group relative block h-auto w-full p-6 text-left whitespace-normal rounded-lg border-2 border-dashed border-primary/30 bg-primary/5 transition-all duration-200 hover:border-primary/60 hover:bg-primary/10"
+                >
+                  <span className="mb-3 block text-3xl">{EMPTY_BOARD_CONFIG.icon}</span>
+                  <h3 className="text-lg font-bold text-foreground">{EMPTY_BOARD_CONFIG.name}</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">{EMPTY_BOARD_CONFIG.description}</p>
+                </Button>
+
+                {templates
+                  .filter((t) => !t.tool_type)
+                  .map((template) => (
+                    <Button
+                      variant="outline"
+                      key={template.id}
+                      onClick={() => selectTemplate(template)}
+                      className="group relative block h-auto w-full p-6 text-left whitespace-normal rounded-lg border border-border bg-card transition-all duration-200 hover:border-primary/50 hover:shadow-card-hover hover:bg-card"
+                    >
+                      <span className="mb-3 block text-3xl">{template.icon || "📋"}</span>
+                      <h3 className="text-lg font-semibold text-card-foreground hover:text-card-foreground">{template.name}</h3>
+                      <p className="mt-1 text-sm text-muted-foreground">{template.description}</p>
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {template.columns.map((col) => (
+                          <span key={col} className="rounded-md bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">
+                            {col}
+                          </span>
+                        ))}
+                      </div>
+                    </Button>
+                  ))}
+              </>
+            )}
           </div>
         </div>
       </div>
